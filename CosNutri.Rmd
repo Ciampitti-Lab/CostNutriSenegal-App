@@ -1,0 +1,136 @@
+---
+title: "CosNutri Senegal App"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    css: css/styles.css
+    logo: www/Logo.png
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+# Libraries ----
+
+# 1. App -----
+library(shiny)
+library(flexdashboard)
+library(shinydashboard)
+library(shinythemes)
+library(shinyWidgets)
+
+# 2. Data Usage -----
+library(tidyverse)
+
+```
+
+
+Visualization
+============================
+
+Column {.sidebar data-width=350}
+----------------------------
+```{r}
+# Select for Districts -----
+shinyWidgets::pickerInput(inputId = "districtSelection",
+                          label = h4("Select a District: "),
+                          choices = c("Diourbel", "Fatick", "Kaffrine", "Kaolack", "Kolda", "Thies"),
+                          multiple = FALSE
+        )
+
+# Radio for baseline or alternative -----
+shiny::radioButtons(inputId = "baselineOrAlternative",
+                    label = "",
+                    choices = c("Baseline" = "baseline",
+                                "Alternative managements" = "alternativeManagements")
+                    )
+
+# Appears when selected alternative managements ------
+
+conditionalPanel(
+  condition = "input.baselineOrAlternative == 'alternativeManagements'",
+  hr(),
+  div(
+    style = "color: #fff;",
+    p("Placeholder")
+  )
+)
+
+# Select Alternative Scenarios ----
+hr()
+
+shinyWidgets::pickerInput(inputId = "scenarioSelection",
+                          label = h4("Select an alternative scenario: "),
+                          choices = c(1, 2, 3, 4, 5),
+                          multiple = FALSE
+        )
+```
+
+Column {data-width=600}
+----------------------------
+
+### Scenarios chart {data-height=550}
+```{r}
+
+```
+
+###
+```{r}
+fluidRow(
+    column(
+      id="map",
+      width = 7,
+      style = "height: 500px",
+      "District selected"
+    ),
+    column(
+        width = 5,
+        div(
+          class = "container",
+          id="price",
+          style = "color: black; height: 150px",
+          "Total production cost"
+        ),
+        div(
+          class = "container",
+          id="ratio",
+          style = "height: 175px",
+          "Cost/Kcal ratio"
+        )
+    )
+)
+```
+
+
+Column {data-width=350}
+----------------------------
+
+### Net cash income 
+```{r}
+
+```
+
+### Kcal per person per day
+```{r}
+
+```
+
+### Protein per person per day
+```{r}
+
+```
+
+### Fat per person per day
+```{r}
+
+```
+
+### Calcium per person per day
+```{r}
+
+```
+
+### Iron per person per day
+```{r}
+
+```
