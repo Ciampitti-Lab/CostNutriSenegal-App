@@ -178,19 +178,56 @@ body hr {
 }
 
 /* RADIO */
+input[type="radio"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #70aec3;
+  margin: 0;
+  
+  font: inherit;
+  color: currentColor;
+  width: 1.15em;
+  height: 1.15em;
+  border: 0.15em solid #70aec3;
+  border-radius: 50%;
+  
+  transform: translateY(-0.075em);
+  
+  display: grid;
+  place-content: center;
+  
+}
+
+input[type="radio"]::before {
+  content: "";
+  width: 0.65em;
+  height: 0.65em;
+  border-radius: 70%;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  box-shadow: inset 1em 1em #000000;
+}
+
+input[type="radio"]:checked::before {
+  transform: scale(1);
+}
+
+.form-control + .form-control {
+  margin-top: 1em;
+}
 
 
 /* SLIDERS */
 .irs--shiny .irs-bar {
-    background: #b25bff !important
+    background: #a6a6a6 !important
 }
 .irs--shiny .irs-from, .irs--shiny .irs-to, .irs--shiny .irs-single {
-    color: #330a57;
+    color: #166e95;
     font-family: 'Open Sans';
     background-color: #d9d9d9 !important;
 }
 .irs-min, .irs-max {
-    color: #330a57;
+    color: #166e95;
     font-family: 'Open Sans';
     background-color: #d9d9d9 !important;
 }
