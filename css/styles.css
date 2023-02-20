@@ -5,11 +5,10 @@
         width: 350px !important;
         overflow-y: scroll;
     }
-    /*.chart-shim {
+    .chart-shim {
         overflow-y: scroll !important;
-    }*/
+    }
 }
-/*
 @media screen and (max-width: 767px) {
     .chart-shim {
         overflow-y: scroll !important;
@@ -77,7 +76,9 @@ h4{
   font-family: 'Montserrat', sans-serif;
   color: #e3ecef;
 }
-
+h1{
+  font-family: 'Montserrat', sans-serif;
+}
 span{
   font-family: 'Montserrat', sans-serif;
   color: #e3ecef;

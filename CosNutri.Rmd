@@ -2,7 +2,7 @@
 title: "CosNutri Senegal App"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
+    orientation: rows
     vertical_layout: fill
     css: css/styles.css
     logo: www/Logo.png
@@ -12,18 +12,42 @@ runtime: shiny
 ```{r setup, include=FALSE}
 # Libraries ----
 
-# 1. App -----
+## 1. App -----
 library(shiny)
 library(flexdashboard)
 library(shinydashboard)
 library(shinythemes)
 library(shinyWidgets)
 
-# 2. Data Usage -----
+## 2. Data Usage -----
 library(tidyverse)
 
-# 3. Design Help -----
+## 3. Design Help -----
 library(tippy)
+
+## 4. Map -----
+library(leaflet)
+library(sf)
+
+## 5. Data import ----
+library(openxlsx)
+
+library(DT)
+
+# Data upload ---------
+
+## 1. Cost ----
+productionCost <- read.csv("data/pearl_millet_management_costs.csv", sep=",", dec=".")
+
+## 2. Map -----
+Sys.setenv(SHAPE_RESTORE_SHX="YES")
+districts <- st_read("shapefiles/zonal_stats.shp", stringsAsFactors=FALSE, quiet=TRUE)
+
+## 3. Data for cards ----
+dataFCards <- read.csv("data/Alternative_Scenarios_Card.csv", sep=",", dec=".")
+
+# Filtering functions import ----
+source(file = "functions.R")
 
 ```
 
@@ -37,7 +61,12 @@ Column {.sidebar data-width=350}
 # Select for Districts -----
 shinyWidgets::pickerInput(inputId = "districtSelection",
                           label = h4("Select a District: "),
-                          choices = c("Diourbel", "Fatick", "Kaffrine", "Kaolack", "Kolda", "Thies"),
+                          choices = c("Diourbel" = "DIOURBEL", 
+                                      "Fatick" = "FATICK",
+                                      "Kaffrine" = "KAFFRINE",
+                                      "Kaolack" = "KAOLACK",
+                                      "Kolda" = "KOLDA",
+                                      "Thies" = "THIES"),
                           multiple = FALSE
         )
 
@@ -48,7 +77,6 @@ shiny::radioButtons(inputId = "baselineOrAlternative",
                                                   "<p>Planting date = 1<p>",
                                                   "<p>Planting density = 1.1<p>",
                                                   "<p>Nitrogen fertilzer amount = 30<p>",
-                                                  "<p>Nitrogen fertilzer cost = 29.7<p>",
                                                   sep =""),
                                   placement = "top-start",
                                   arrow = TRUE,
@@ -73,24 +101,12 @@ conditionalPanel(
                           choices = c(1.1, 3.3, 6.6),
                           multiple = FALSE
         ),
-  shinyWidgets::pickerInput(inputId = "seedCost",
-                          label = h4("Select a seed cost: "),
-                          choices = c(1.4839, 4.4517, 8.9034),
-                          multiple = FALSE
-        ),
   sliderInput(inputId = "nAmount",
               label = h4("Amount of nitrogen fertilizer: "),
               min = 0,
               max = 100,
               value = 60,
               step = 20,
-              sep = ""),
-  sliderInput(inputId = "nCost",
-              label = h4("Nitrogen fertilizer cost: "),
-              min = 0,
-              max = 99,
-              value = 59.4,
-              step = 19.8,
               sep = "")
 )
 
@@ -104,87 +120,122 @@ shinyWidgets::pickerInput(inputId = "scenarioSelection",
         )
 ```
 
-Column {data-width=600}
+Row {data-height=150}
 ----------------------------
-
-### Scenarios chart {data-height=550}
+### Seed Cost
 ```{r}
+
+# Value box of Seed cost ----------
+seedCost <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    cost = 1.4839
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+    cost = productionCost$seed_cost
+    
+  }
+  
+  cost
+  
+})
+
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h1((paste(round(seedCost(), digits=2), "?"))),
+                          caption = paste("<br>",
+                                          "<h4>Seed cost</h4>",
+                                          sep =""),
+                          icon = "fa-dollar-sign",
+                          color = ifelse(seedCost() == 1.4839 , "green", ifelse(seedCost() == 4.4517, "#d6d304", "red")))
+})
 
 ```
 
-###
-<!-- # ```{r} -->
-<!-- # fluidRow( -->
-<!-- #     column( -->
-<!-- #       id="map", -->
-<!-- #       width = 7, -->
-<!-- #       style = "height: 500px", -->
-<!-- #       "District selected" -->
-<!-- #     ), -->
-<!-- #     column( -->
-<!-- #         width = 5, -->
-<!-- #         div( -->
-<!-- #           class = "container", -->
-<!-- #           id="price", -->
-<!-- #           style = "color: black; height: 150px", -->
-<!-- #           "Total production cost" -->
-<!-- #         ), -->
-<!-- #         div( -->
-<!-- #           class = "container", -->
-<!-- #           id="ratio", -->
-<!-- #           style = "height: 175px", -->
-<!-- #           flexdashboard::renderGauge({ -->
-<!-- #    -->
-<!-- #             flexdashboard::gauge(0.4, -->
-<!-- #                                  min = 0, -->
-<!-- #                                  max = 0.6, -->
-<!-- #                                  symbol = '', -->
-<!-- #                                  label = "Price Ratio", -->
-<!-- #                                   gaugeSectors( success = c(0,0.1), -->
-<!-- #                                                 warning = c(0.101,0.15), -->
-<!-- #                                                 danger = c(0.151, 0.3), -->
-<!-- #                                                 colors = c("#2a9d8f", "#fcbf49", "#ce4257")) -->
-<!-- #                                   ) -->
-<!-- #              -->
-<!-- #           }) -->
-<!-- #         ) -->
-<!-- #     ) -->
-<!-- # ) -->
-<!-- # ``` -->
-<div class = "row">
-<div class = "col-md-7">
-<center>
+### Nitrogen Cost
 ```{r}
-div(
-  id="map",
-  width = 7,
-  style = "height: 340px",
-  "District selected"
-)
+
+# Value box of Nitrogen cost ----------
+NCost <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    cost = 31.1839
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+    cost = productionCost$nitrogen_cost
+    
+  }
+  
+  cost
+  
+})
+
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h1((paste(round(NCost(), digits=2), "?"))),
+                          caption = paste("<br>",
+                                          "<h4>Nitrogen fertilizer cost</h4>",
+                                          sep =""),
+                          icon = "fa-dollar-sign",
+                          color = ifelse(NCost() < 50, "green", "red"))
+})
+
 ```
-</center>
-</div>
 
-<div class = "col-md-5">
-<center>
-```{r value, fig.width=2, fig.height=2}
-p("Value Box")
-```    
-</center>
-<center>
-```{r gauge, fig.width=2, fig.height=2}
-gauge(round(100*(1.0*20)/50,2),0,100, symbol = '%', label= "Full Cabin Match: Tile 1", gaugeSectors(
-  success = c(80, 100), warning = c(40, 79), danger = c(0, 39)))
-```    
-</center>
-</div>
-</div>
+### Total Cost
+```{r}
+
+# Value box of Total production cost ----------
+totalCost <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    cost = 31.1839
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+    cost = productionCost$total_cost
+    
+  }
+  
+  cost
+  
+})
 
 
-Column {data-width=350}
-----------------------------
+flexdashboard::renderValueBox({
 
-### Net cash income 
+  flexdashboard::valueBox(value = h1((paste(round(totalCost(), digits=2), "?"))),
+                          caption = paste("<br>",
+                                          "<h4>Total production cost</h4>",
+                                          sep =""),
+                          icon = "fa-dollar-sign",
+                          color = ifelse(totalCost() < 50, "green", "red"))
+})
+```
+
+### Net Cash Income
 ```{r}
 
 ```
@@ -193,6 +244,9 @@ Column {data-width=350}
 ```{r}
 
 ```
+
+Row {data-height=150}
+----------------------------
 
 ### Protein per person per day
 ```{r}
@@ -212,4 +266,69 @@ Column {data-width=350}
 ### Iron per person per day
 ```{r}
 
+```
+
+### Cost/Kcal ratio
+```{r}
+gauge(round(100*(1.0*20)/50,2),0,100, symbol = '%', label= "Full Cabin Match: Tile 1", gaugeSectors(
+  success = c(80, 100), warning = c(40, 79), danger = c(0, 39)))
+```
+
+Row
+----------------------------
+### Scenarios chart
+```{r}
+
+
+
+```
+
+### District selected
+
+```{r}
+# Filtering from user input -----
+selectDistrict <- reactive({
+
+  districtSelected <- districts %>%
+    dplyr::filter(DISTRICT == input$districtSelection)
+
+  districtSelected
+
+})
+
+# Generating Map ----
+output$districtMap <- renderLeaflet({
+
+    leaflet(width = 200, height = 300) %>%
+          addTiles() %>%
+          addPolygons( data = districts,
+                       weight = 1,
+                       smoothFactor = 0.2,
+                       fillOpacity = 0.2,
+                       color = "black",
+                       highlight = highlightOptions(
+                             weight = 5,
+                             color = "#666666",
+                             fillOpacity = 0.25,
+                             bringToFront = TRUE
+                           ),
+                       label = districts$DISTRICT
+            ) %>%
+          addPolygons( data = selectDistrict(),
+                       weight = 1,
+                       smoothFactor = 1,
+                       fillOpacity = 1,
+                       color = "#1c5f7e",
+                        highlight = highlightOptions(
+                             weight = 5,
+                             color = "#666666",
+                             fillOpacity = 0.5,
+                             bringToFront = TRUE
+                           )
+            )
+
+})
+
+# Showing the map ----
+leafletOutput("districtMap")
 ```
