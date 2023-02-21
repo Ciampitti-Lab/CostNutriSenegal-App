@@ -87,7 +87,7 @@ span{
 
 h2, p, h3{
   font-family: 'Montserrat', sans-serif;
-  color: #1c5f7e;
+  /*color: #1c5f7e;*/
 }
 
 .chart-title {
