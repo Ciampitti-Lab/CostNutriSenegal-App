@@ -1,6 +1,7 @@
 # Libraries load ---- 
 library(dplyr)
 library(readxl)
+library(stringr)
 
 dataFCards <- read.csv("data/Alternative_Scenarios_Card.csv", sep=",", dec=".")
 
@@ -52,6 +53,14 @@ graph_filtering <- function(district, baseline, pd, pp, n, acronym){
   
   d1 <- data.frame(data=unlist(values, use.names = FALSE))
   
+  multipliers <- c("GCal", "GIron", "GVitA")
+  
+  if(any(acronym %in% multipliers)){
+    
+    d1$data <- d1$data*1000
+    
+  }
+  
   Scenarios <- rep(c("Alt 1", "Alt 2", "Alt 3", "Alt 4", "Alt 5"),each=500)
   d2 <- cbind(d1, Scenarios)
   
@@ -64,4 +73,4 @@ dataBase <- graph_filtering(district = "THIES",
                             pd = 1,
                             pp = 3.3,
                             n = 20,
-                            acronym = "KCal")
+                            acronym = "GIron")

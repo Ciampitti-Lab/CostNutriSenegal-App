@@ -1,8 +1,8 @@
 Variable,Unit
 NCFI,FCFA
-KCal,Kcal
-GProtien,grams
-GFat,grams
-GCal,grams
-GIron,grams
-GVitA,grams
+KCal,Kcal per person per day
+GProtien,g per person per day
+GFat,g per person per day
+GCal,mg per person per day
+GIron,mg per person per day
+GVitA,mg per person per day

@@ -117,445 +117,55 @@ conditionalPanel(
               sep = "")
 )
 
-# Select Alternative Scenarios ----
-hr()
+# Filtering from user input -----
+selectDistrict <- reactive({
 
-shinyWidgets::pickerInput(inputId = "scenarioSelection",
-                          label = h4("Select an alternative scenario: "),
-                          choices = c(1, 2, 3, 4, 5),
-                          multiple = FALSE
-        )
-```
+  districtSelected <- districts %>%
+    dplyr::filter(DISTRICT == input$districtSelection)
 
-Row {data-height=150}
-----------------------------
-### Seed Cost
-```{r}
+  districtSelected
 
-# Value box of Seed cost ----------
-seedCost <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    cost = 1.4839
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    productionCost <- productionCost %>%
-      dplyr::filter(planting_date == input$plantingDate,
-                    plantig_density == input$plantingDensity,
-                    nitrogen_fertilizer == input$nAmount)
-    
-    cost = productionCost$seed_cost
-    
-  }
-  
-  cost
-  
 })
 
+# Generating Map ----
+output$districtMap <- renderLeaflet({
 
-flexdashboard::renderValueBox({
+    leaflet() %>%
+          addTiles() %>%
+          addPolygons( data = districts,
+                       weight = 1,
+                       smoothFactor = 0.2,
+                       fillOpacity = 0.2,
+                       color = "black",
+                       highlight = highlightOptions(
+                             weight = 5,
+                             color = "#666666",
+                             fillOpacity = 0.25,
+                             bringToFront = TRUE
+                           ),
+                       label = districts$DISTRICT
+            ) %>%
+          addPolygons( data = selectDistrict(),
+                       weight = 1,
+                       smoothFactor = 1,
+                       fillOpacity = 1,
+                       color = "#1c5f7e",
+                        highlight = highlightOptions(
+                             weight = 5,
+                             color = "#666666",
+                             fillOpacity = 0.5,
+                             bringToFront = TRUE
+                           )
+            )
 
-  flexdashboard::valueBox(value = h1((paste(round(seedCost(), digits=2), "?"))),
-                          caption = paste("<br>",
-                                          "<h4>Seed cost</h4>",
-                                          sep =""),
-                          color = ifelse(seedCost() == 1.4839 , "green", ifelse(seedCost() == 4.4517, "#d6d304", "red")))
 })
 
-```
-
-### Nitrogen Cost
-```{r}
-
-# Value box of Nitrogen cost ----------
-NCost <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    cost = 31.1839
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    productionCost <- productionCost %>%
-      dplyr::filter(planting_date == input$plantingDate,
-                    plantig_density == input$plantingDensity,
-                    nitrogen_fertilizer == input$nAmount)
-    
-    cost = productionCost$nitrogen_cost
-    
-  }
-  
-  cost
-  
-})
-
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h1((paste(round(NCost(), digits=2), "?"))),
-                          caption = paste("<br>",
-                                          "<h4>Nitrogen fertilizer cost</h4>",
-                                          sep =""),
-                          color = ifelse(NCost() < 50, "green", "red"))
-})
+# Showing the map ----
+leafletOutput("districtMap", height = 250)
 
 ```
 
-### Total Cost
-```{r}
-
-# Value box of Total production cost ----------
-totalCost <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    cost = 31.1839
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    productionCost <- productionCost %>%
-      dplyr::filter(planting_date == input$plantingDate,
-                    plantig_density == input$plantingDensity,
-                    nitrogen_fertilizer == input$nAmount)
-    
-    cost = productionCost$total_cost
-    
-  }
-  
-  cost
-  
-})
-
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h1((paste(round(totalCost(), digits=2), "?"))),
-                          caption = paste("<br>",
-                                          "<h4>Total production cost</h4>",
-                                          sep =""),
-                          color = ifelse(totalCost() < 50, "green", "red"))
-})
-```
-
-### Net Cash Income
-```{r, echo=FALSE}
-
-# Value box of Net Cash Income ----------
-netCashIncome <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = TRUE,
-                           acronym = "NCFI",
-                           scenario = input$scenarioSelection)
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = FALSE,
-                           pd = input$plantingDate,
-                           pp = input$plantingDensity,
-                           n = input$nAmount,
-                           acronym = "NCFI",
-                           scenario = input$scenarioSelection)
-    
-  }
-  
-  cost
-  
-})
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h2((paste(round(netCashIncome(), digits=1), "FCFA"))),
-                          caption = paste("<br>",
-                                          "<h4>Net cash income</h4>",
-                                          sep =""),
-                          color = ifelse(round(netCashIncome(), digits=1) > 11390401.3 , "green",
-                                         ifelse(round(netCashIncome(), digits=1) < 5178833.7, "red",
-                                                "#d6d304")))
-})
-
-```
-
-### Kcal per person per day
-```{r}
-
-# Value box of KCal per person ----------
-KCalperperson <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = TRUE,
-                           acronym = "KCal",
-                           scenario = input$scenarioSelection)
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = FALSE,
-                           pd = input$plantingDate,
-                           pp = input$plantingDensity,
-                           n = input$nAmount,
-                           acronym = "KCal",
-                           scenario = input$scenarioSelection)
-    
-  }
-  
-  cost
-  
-})
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h2((paste(round(KCalperperson(), digits=1), "KCal"))),
-                          caption = paste("<br>",
-                                          "<h4>KCal per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(KCalperperson(), digits=1) > 2303.6 , "green",
-                                         ifelse(round(KCalperperson(), digits=1) < 1740.5, "red",
-                                                "#d6d304")))
-})
-
-```
-
-Row {data-height=150}
-----------------------------
-
-### Protein per person per day
-```{r}
-
-# Value box of Protein per person ----------
-Proteinperperson <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = TRUE,
-                           acronym = "GProtien",
-                           scenario = input$scenarioSelection)
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = FALSE,
-                           pd = input$plantingDate,
-                           pp = input$plantingDensity,
-                           n = input$nAmount,
-                           acronym = "GProtien",
-                           scenario = input$scenarioSelection)
-    
-  }
-  
-  cost
-  
-})
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h2((paste(round(Proteinperperson(), digits=1), "grams"))),
-                          caption = paste("<br>",
-                                          "<h4>Protein per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(Proteinperperson(), digits=1) > 76.8 , "green",
-                                         ifelse(round(Proteinperperson(), digits=1) < 56.2, "red",
-                                                "#d6d304")))
-})
-
-```
-
-### Fat per person per day
-```{r}
-
-# Value box of Fat per person ----------
-Fatperperson <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = TRUE,
-                           acronym = "GFat",
-                           scenario = input$scenarioSelection)
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = FALSE,
-                           pd = input$plantingDate,
-                           pp = input$plantingDensity,
-                           n = input$nAmount,
-                           acronym = "GFat",
-                           scenario = input$scenarioSelection)
-    
-  }
-  
-  cost
-  
-})
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h2((paste(round(Fatperperson(), digits=1), "grams"))),
-                          caption = paste("<br>",
-                                          "<h4>Fat per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(Fatperperson(), digits=1) > 107.9 , "green",
-                                         ifelse(round(Fatperperson(), digits=1) < 80.4, "red",
-                                                "#d6d304")))
-})
-
-```
-
-### Calcium per person per day
-```{r}
-
-# Value box of Calcium per person ----------
-Calciumperperson <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = TRUE,
-                           acronym = "GCal",
-                           scenario = input$scenarioSelection)
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = FALSE,
-                           pd = input$plantingDate,
-                           pp = input$plantingDensity,
-                           n = input$nAmount,
-                           acronym = "GCal",
-                           scenario = input$scenarioSelection)
-    
-  }
-  
-  cost
-  
-})
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h2((paste(round(Calciumperperson(), digits=1), "mg"))),
-                          caption = paste("<br>",
-                                          "<h4>Calcium per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(Calciumperperson(), digits=1) > 366.8 , "green",
-                                         ifelse(round(Calciumperperson(), digits=1) < 204.3, "red",
-                                                "#d6d304")))
-})
-
-```
-
-### Iron per person per day
-```{r}
-
-# Value box of Iron per person ----------
-Ironperperson <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = TRUE,
-                           acronym = "GIron",
-                           scenario = input$scenarioSelection)
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = FALSE,
-                           pd = input$plantingDate,
-                           pp = input$plantingDensity,
-                           n = input$nAmount,
-                           acronym = "GIron",
-                           scenario = input$scenarioSelection)
-    
-  }
-  
-  cost
-  
-})
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h2((paste(round(Ironperperson(), digits=2), "mg"))),
-                          caption = paste("<br>",
-                                          "<h4>Iron per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(Ironperperson(), digits=2) > 11.8 , "green",
-                                         ifelse(round(Ironperperson(), digits=2) < 7.96, "red",
-                                                "#d6d304")))
-})
-
-```
-
-### Vit A per person per day
-```{r}
-# Value box of Vitamin A per person ----------
-VitAperperson <- reactive({
-  
-  if(input$baselineOrAlternative == "baseline"){
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = TRUE,
-                           acronym = "GVitA",
-                           scenario = input$scenarioSelection)
-  }
-  
-  else if(input$baselineOrAlternative == "alternativeManagements") {
-    
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           baseline = FALSE,
-                           pd = input$plantingDate,
-                           pp = input$plantingDensity,
-                           n = input$nAmount,
-                           acronym = "GVitA",
-                           scenario = input$scenarioSelection)
-    
-  }
-  
-  cost
-  
-})
-
-flexdashboard::renderValueBox({
-
-  flexdashboard::valueBox(value = h2((paste(round(VitAperperson(), digits=3), "mg"))),
-                          caption = paste("<br>",
-                                          "<h4>Vitamin A per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(VitAperperson(), digits=3) > 0.103 , "green",
-                                         ifelse(round(VitAperperson(), digits=3) < 0.041, "red",
-                                                "#d6d304")))
-})
-```
-
-Row
+Row {data-height = 450}
 ----------------------------
 ### Scenarios chart
 
@@ -563,7 +173,7 @@ Row
 ```{r}
 # Select for Variable -----
 shinyWidgets::pickerInput(inputId = "variableSelection",
-                          label = h4("Select a variable to be plotted: "),
+                          label = h5("Select a variable to be plotted: "),
                           choices = c("Net cash Income" = "NCFI", 
                                       "Kilocalories" = "KCal",
                                       "Protein" = "GProtien",
@@ -572,6 +182,17 @@ shinyWidgets::pickerInput(inputId = "variableSelection",
                                       "Iron" = "GIron",
                                       "Vitamin A" = "GVitA"),
                           multiple = FALSE,
+                          inline = TRUE,
+                          width = "fit"
+        )
+
+# Select Alternative Scenarios ----
+shinyWidgets::pickerInput(inputId = "scenarioSelection",
+                          label = "Select an alternative scenario to show on cards:",
+                          choices = c(1, 2, 3, 4, 5),
+                          multiple = FALSE,
+                          inline = TRUE,
+                          width = "fit"
         )
 ```
 </center>
@@ -645,57 +266,438 @@ output$boxPlot <- renderPlotly({
 
 })
 
-plotlyOutput("boxPlot", height = 300)
+plotlyOutput("boxPlot")
+
+```
+
+Row {data-height=150}
+----------------------------
+
+### Seed Cost
+```{r}
+
+# Value box of Seed cost ----------
+seedCost <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    cost = 1.4839
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+    cost = productionCost$seed_cost
+    
+  }
+  
+  cost
+  
+})
+
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h1((paste(round(seedCost()), "?"))),
+                          caption = paste("<h4>Seed cost</h4>",
+                                          sep =""),
+                          color = ifelse(seedCost() == 1.4839 , "success",
+                                         ifelse(seedCost() == 4.4517, "warning",
+                                                "danger")),
+                          icon = "fa-dollar-sign")
+})
+
+```
+
+### Nitrogen Cost
+```{r}
+
+# Value box of Nitrogen cost ----------
+NCost <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    cost = 31.1839
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+    cost = productionCost$nitrogen_cost
+    
+  }
+  
+  cost
+  
+})
+
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h1((paste(round(NCost()), "?"))),
+                          caption = paste("<h4>Nitrogen fertilizer cost</h4>",
+                                          sep =""),
+                          color = ifelse(NCost() < 50, "success", "danger"),
+                          icon = "fa-dollar-sign")
+})
+
+```
+
+### Kcal per person per day
+```{r}
+
+# Value box of KCal per person ----------
+KCalperperson <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = TRUE,
+                           acronym = "KCal",
+                           scenario = input$scenarioSelection)
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = FALSE,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "KCal",
+                           scenario = input$scenarioSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(KCalperperson()), "KCal"))),
+                          caption = paste("<h4>KCal per person per day</h4>",
+                                          sep =""),
+                          color = ifelse(round(KCalperperson(), digits=1) > 2303.6 , "success",
+                                         ifelse(round(KCalperperson(), digits=1) < 1740.5, "danger",
+                                                "warning")),
+                          icon = "fa-chart-pyramid")
+})
 
 ```
 
 
-### District selected {data-width=450}
-
+### Protein per person per day
 ```{r}
-# Filtering from user input -----
-selectDistrict <- reactive({
 
-  districtSelected <- districts %>%
-    dplyr::filter(DISTRICT == input$districtSelection)
-
-  districtSelected
-
+# Value box of Protein per person ----------
+Proteinperperson <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = TRUE,
+                           acronym = "GProtien",
+                           scenario = input$scenarioSelection)
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = FALSE,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GProtien",
+                           scenario = input$scenarioSelection)
+    
+  }
+  
+  cost
+  
 })
 
-# Generating Map ----
-output$districtMap <- renderLeaflet({
+flexdashboard::renderValueBox({
 
-    leaflet(width = 200, height = 300) %>%
-          addTiles() %>%
-          addPolygons( data = districts,
-                       weight = 1,
-                       smoothFactor = 0.2,
-                       fillOpacity = 0.2,
-                       color = "black",
-                       highlight = highlightOptions(
-                             weight = 5,
-                             color = "#666666",
-                             fillOpacity = 0.25,
-                             bringToFront = TRUE
-                           ),
-                       label = districts$DISTRICT
-            ) %>%
-          addPolygons( data = selectDistrict(),
-                       weight = 1,
-                       smoothFactor = 1,
-                       fillOpacity = 1,
-                       color = "#1c5f7e",
-                        highlight = highlightOptions(
-                             weight = 5,
-                             color = "#666666",
-                             fillOpacity = 0.5,
-                             bringToFront = TRUE
-                           )
-            )
-
+  flexdashboard::valueBox(value = h2((paste(round(Proteinperperson()), "grams"))),
+                          caption = paste("<h4>Protein per person per day</h4>",
+                                          sep =""),
+                          color = ifelse(round(Proteinperperson(), digits=1) > 76.8 , "success",
+                                         ifelse(round(Proteinperperson(), digits=1) < 56.2, "danger",
+                                                "warning")),
+                          icon = "fa-chart-pyramid")
 })
 
-# Showing the map ----
-leafletOutput("districtMap")
+```
+
+### Fat per person per day
+```{r}
+
+# Value box of Fat per person ----------
+Fatperperson <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = TRUE,
+                           acronym = "GFat",
+                           scenario = input$scenarioSelection)
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = FALSE,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GFat",
+                           scenario = input$scenarioSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(Fatperperson()), "grams"))),
+                          caption = paste("<h4>Fat per person per day</h4>",
+                                          sep =""),
+                          color = ifelse(round(Fatperperson(), digits=1) > 107.9 , "success",
+                                         ifelse(round(Fatperperson(), digits=1) < 80.4, "danger",
+                                                "warning")),
+                          icon = "fa-chart-pyramid")
+})
+
+```
+
+Row {data-height=150}
+----------------------------
+
+### Total Cost
+```{r}
+
+# Value box of Total production cost ----------
+totalCost <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    cost = 31.1839
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+    cost = productionCost$total_cost
+    
+  }
+  
+  cost
+  
+})
+
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h1((paste(round(totalCost()), "?"))),
+                          caption = paste("<h4>Total production cost</h4>",
+                                          sep =""),
+                          color = ifelse(totalCost() < 50, "success", "danger"),
+                          icon = "fa-dollar-sign")
+})
+```
+
+### Net Cash Income
+```{r, echo=FALSE}
+
+# Value box of Net Cash Income ----------
+netCashIncome <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = TRUE,
+                           acronym = "NCFI",
+                           scenario = input$scenarioSelection)
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = FALSE,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "NCFI",
+                           scenario = input$scenarioSelection)
+    
+  }
+  
+  cost <- cost/1000
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2(paste(round(netCashIncome()), "FCFA")),
+                          caption = paste("<h4>Net cash income <small style = 'color:white'>(x1000)</small></h4>",
+                                          sep =""),
+                          color = ifelse(round(netCashIncome(), digits=1) > 11390401.3 , "success",
+                                         ifelse(round(netCashIncome(), digits=1) < 5178833.7, "danger",
+                                                "warning")),
+                          icon = "fa-dollar-sign")
+})
+
+```
+
+### Calcium per person per day
+```{r}
+
+# Value box of Calcium per person ----------
+Calciumperperson <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = TRUE,
+                           acronym = "GCal",
+                           scenario = input$scenarioSelection)
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = FALSE,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GCal",
+                           scenario = input$scenarioSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(Calciumperperson()), "mg"))),
+                          caption = paste("<h4>Calcium per person per day</h4>",
+                                          sep =""),
+                          color = ifelse(round(Calciumperperson(), digits=1) > 366.8 , "success",
+                                         ifelse(round(Calciumperperson(), digits=1) < 204.3, "danger",
+                                                "warning")),
+                          icon = "fa-chart-pyramid")
+})
+
+```
+
+### Iron per person per day
+```{r}
+
+# Value box of Iron per person ----------
+Ironperperson <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = TRUE,
+                           acronym = "GIron",
+                           scenario = input$scenarioSelection)
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = FALSE,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GIron",
+                           scenario = input$scenarioSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(Ironperperson()), "mg"))),
+                          caption = paste("<h4>Iron per person per day</h4>",
+                                          sep =""),
+                          color = ifelse(round(Ironperperson(), digits=2) > 11.8 , "success",
+                                         ifelse(round(Ironperperson(), digits=2) < 7.96, "danger",
+                                                "warning")),
+                          icon = "fa-chart-pyramid")
+})
+
+```
+
+### Vit A per person per day
+```{r}
+# Value box of Vitamin A per person ----------
+VitAperperson <- reactive({
+  
+  if(input$baselineOrAlternative == "baseline"){
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = TRUE,
+                           acronym = "GVitA",
+                           scenario = input$scenarioSelection)
+  }
+  
+  else if(input$baselineOrAlternative == "alternativeManagements") {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           baseline = FALSE,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GVitA",
+                           scenario = input$scenarioSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(VitAperperson(), digits=3), "mg"))),
+                          caption = paste("<h4>Vitamin A per person per day</h4>",
+                                          sep =""),
+                          color = ifelse(round(VitAperperson(), digits=3) > 0.103 , "success",
+                                         ifelse(round(VitAperperson(), digits=3) < 0.041, "danger",
+                                                "warning"))
+                          )
+})
 ```
