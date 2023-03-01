@@ -217,6 +217,9 @@ input[type="radio"]:checked::before {
   margin-top: 1em;
 }
 
+.form-group shiny-input-container shiny-input-radiogroup shiny-input-container-inline{
+  margin-top: -20px;
+}
 
 /* SLIDERS */
 .irs--shiny .irs-bar {
@@ -244,4 +247,12 @@ input[type="radio"]:checked::before {
 /* VALUE BOX */
 .value-output{
   color: white !important;
+}
+
+/* LEAFLET MAP */
+.leaflet-touch .leaflet-bar a {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    display: none;
 }

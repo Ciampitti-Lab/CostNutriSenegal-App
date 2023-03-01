@@ -1,0 +1,14 @@
+name: CosNutri
+title: CosNutri
+username:
+account: ciampittilab
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8427583
+bundleId: 6894594
+url: https://ciampittilab.shinyapps.io/CosNutri/
+when: 1677536966.74793
+lastSyncTime: 1677536966.74793
+asMultiple: FALSE
+asStatic: FALSE
+additionalFiles: data/Data_for_Kansas_DIOURBEL.xlsx|data/Data_for_Kansas_FATICK.xlsx|data/Data_for_Kansas_KAFFRINE.xlsx|data/Data_for_Kansas_KAOLACK.xlsx|data/Data_for_Kansas_KOLDA.xlsx|data/Data_for_Kansas_THIES.xlsx
