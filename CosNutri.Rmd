@@ -3,7 +3,7 @@ title: "CosNutri Senegal App"
 output:
   flexdashboard::flex_dashboard:
     orientation: rows
-    vertical_layout: fill
+    vertical_layout: scroll
     css: css/styles.css
     logo: www/Logo.png
 runtime: shiny
@@ -14,6 +14,9 @@ resource_files:
 - data/Data_for_Kansas_KAOLACK.xlsx
 - data/Data_for_Kansas_KOLDA.xlsx
 - data/Data_for_Kansas_THIES.xlsx
+- shapefiles/zonal_stats.dbf
+- shapefiles/zonal_stats.prj
+- shapefiles/zonal_stats.shx
 ---
 
 ```{r setup, include=FALSE}
@@ -42,6 +45,7 @@ library(openxlsx)
 ## 6. Graph ----
 library(plotly)
 library(ggplot2)
+library(scales)
 
 # Data upload ---------
 
@@ -63,6 +67,7 @@ source(file = "functions.R")
 
 # Font awesome importation ----
 tags$script(src="https://kit.fontawesome.com/e66b2723d1.js")
+tags$head( tags$style(HTML(".fa{font-size: 10px;}")))
 
 ```
 
@@ -94,7 +99,7 @@ output$districtMap <- renderLeaflet({
 })
 
 # Showing the map ----
-leafletOutput("districtMap", height = 250)
+leafletOutput("districtMap", height = 225)
 
 hr()
 
@@ -102,7 +107,7 @@ hr()
 shiny::radioButtons(inputId = "precipitationOrAlternative",
                     label = h4("Analysis by:"),
                     choices = c("Alternative managements" = "alternativeManagements",
-                                "Precipitation"  = "precipitation")
+                                "Weather based"  = "precipitation")
                     )
 
 # Appears when selected alternative managements ------
@@ -159,7 +164,7 @@ conditionalPanel(
 
 ```
 
-Box Chart {data-height = 450}
+Box Chart
 ----------------------------
 ### Scenarios chart
 
@@ -169,12 +174,13 @@ Box Chart {data-height = 450}
 shinyWidgets::pickerInput(inputId = "variableSelection",
                           label = h5("Select a variable to be plotted: "),
                           choices = c("Net cash Income" = "NCFI", 
-                                      "Kilocalories" = "KCal",
+                                      "Calories" = "KCal",
                                       "Protein" = "GProtien",
                                       "Fat" = "GFat",
                                       "Calcium" = "GCal",
                                       "Iron" = "GIron",
-                                      "Vitamin A" = "GVitA"),
+                                      "Vitamin A" = "GVitA",
+                                      "Production" = "production"),
                           multiple = FALSE,
                           inline = TRUE,
                           width = "fit"
@@ -188,16 +194,13 @@ output$boxPlot <- renderPlotly({
   
   if(input$precipitationOrAlternative == "precipitation"){
     
-    boxPlot <- graph_filtering(district = input$districtSelection,
-                              precipitation = TRUE,
-                              acronym = input$variableSelection)
+    
     
   }
   
   else if(input$precipitationOrAlternative == "alternativeManagements"){
     
     boxPlot <- graph_filtering(district = input$districtSelection,
-                              precipitation = FALSE,
                               pd = input$plantingDate,
                               pp = input$plantingDensity,
                               n = input$nAmount,
@@ -206,41 +209,48 @@ output$boxPlot <- renderPlotly({
     
   }
   
-  ggplotly(boxPlot, height = 300)
+  ggplotly(boxPlot)
   
 })
 
 div(
-  class = "container",
   id = "plot",
-  style = "height: 350px;",
+  style = "height: 350px",
   plotlyOutput("boxPlot")
 )
 
 
 ```
 
-Checkbox {data-height=100}
+Checkbox & Legends{data-height=180}
 ----------------------------
 
-### Year selection
+### Year selection and nutritional legend
 <center>
 ```{r}
 # Select Alternative Scenarios ----
 shinyWidgets::radioGroupButtons(inputId = "yearSelection",
-                                label = "Select a year to show on cards",
-                                choices = c("2016" = 1,
-                                            "2017" = 2,
-                                            "2018" = 3,
-                                            "2019" = 4,
-                                            "2020" = 5
-                                            ),
-                                status = "primary"
-)
+                                  label = "Select a year to show on the cards",
+                                  choices = c("2016" = 1,
+                                              "2017" = 2,
+                                              "2018" = 3,
+                                              "2019" = 4,
+                                              "2020" = 5
+                                              ),
+                                  status = "primary"
+  )
 ```
 </center>
+```{r}
+hr()
+div(
+  # Legend for nutrition ----
+  tags$img(src = "www/CardsLegend1.png",
+           id = "cardLegend")
+)
+```
 
-Cards 1 {data-height=150}
+Cards 1
 ----------------------------
 
 ### Seed Cost
@@ -264,11 +274,8 @@ seedCost <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h1((paste(round(seedCost()), "USD"))),
-                          caption = paste("<h4>Seed cost</h4>",
-                                          sep =""),
-                          color = ifelse(seedCost() == 1.4839 , "success",
-                                         ifelse(seedCost() == 4.4517, "warning",
-                                                "danger")),
+                          caption = h4("Seed cost"),
+                          color = "#70aec3",
                           icon = "fa-dollar-sign")
 })
 
@@ -295,9 +302,8 @@ NCost <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h1((paste(round(NCost()), "USD"))),
-                          caption = paste("<h4>Nitrogen fertilizer cost</h4>",
-                                          sep =""),
-                          color = ifelse(NCost() < 50, "success", "danger"),
+                          caption = h4("Nitrogen fertilizer cost"),
+                          color = "#70aec3",
                           icon = "fa-dollar-sign")
 })
 
@@ -338,11 +344,8 @@ KCalperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(KCalperperson()), "Cal"))),
-                          caption = paste("<h4>Cal per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(KCalperperson(), digits=1) > 2303.6 , "success",
-                                         ifelse(round(KCalperperson(), digits=1) < 1740.5, "danger",
-                                                "warning")),
+                          caption = h4("Cal per person per day"),
+                          color = ifelse(round(KCalperperson(), digits=1) > 2306.4 , "success", "danger"),
                           icon = "fa-utensils")
 })
 
@@ -384,11 +387,8 @@ Proteinperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(Proteinperperson()), "grams"))),
-                          caption = paste("<h4>Protein per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(Proteinperperson(), digits=1) > 76.8 , "success",
-                                         ifelse(round(Proteinperperson(), digits=1) < 56.2, "danger",
-                                                "warning")),
+                          caption = h4("Protein per person per day"),
+                          color = ifelse(round(Proteinperperson(), digits=1) > 52.1 , "success", "danger"),
                           icon = "fa-utensils")
 })
 
@@ -429,17 +429,14 @@ Fatperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(Fatperperson()), "grams"))),
-                          caption = paste("<h4>Fat per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(Fatperperson(), digits=1) > 107.9 , "success",
-                                         ifelse(round(Fatperperson(), digits=1) < 80.4, "danger",
-                                                "warning")),
+                          caption = h4("Fat per person per day"),
+                          color = ifelse(round(Fatperperson(), digits=1) > 73.7 , "success", "danger"),
                           icon = "fa-utensils")
 })
 
 ```
 
-Cards 20{data-height=150}
+Cards 2
 ----------------------------
 
 ### Total Cost
@@ -463,9 +460,8 @@ totalCost <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h1((paste(round(totalCost()), "USD"))),
-                          caption = paste("<h4>Total production cost</h4>",
-                                          sep =""),
-                          color = ifelse(totalCost() < 50, "success", "danger"),
+                          caption = h4("Total production cost"),
+                          color = "#70aec3",
                           icon = "fa-dollar-sign")
 })
 ```
@@ -498,7 +494,8 @@ netCashIncome <- reactive({
     
   }
   
-  cost <- cost/(100*607.77)
+  value <- cost/(100*607.77)
+  return(value)
   
 })
 
@@ -506,10 +503,8 @@ flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2(paste(round(netCashIncome()), "USD")),
                           caption = paste("<h4>Net cash income <small style = 'color:white'>(x100)</small></h4>",
-                                          sep =""),
-                          color = ifelse(round(netCashIncome(), digits=1) > 11390401.3 , "success",
-                                         ifelse(round(netCashIncome(), digits=1) < 5178833.7, "danger",
-                                                "warning")),
+                                          sep = ""),
+                          color = "#70aec3",
                           icon = "fa-dollar-sign")
 })
 
@@ -550,11 +545,8 @@ Calciumperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(Calciumperperson()), "mg"))),
-                          caption = paste("<h4>Calcium per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(Calciumperperson(), digits=1) > 366.8 , "success",
-                                         ifelse(round(Calciumperperson(), digits=1) < 204.3, "danger",
-                                                "warning")),
+                          caption = h4("Calcium per person per day"),
+                          color = ifelse(round(Calciumperperson(), digits=1) > 1446.7 , "success", "danger"),
                           icon = "fa-utensils")
 })
 
@@ -595,11 +587,8 @@ Ironperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(Ironperperson()), "mg"))),
-                          caption = paste("<h4>Iron per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(Ironperperson(), digits=2) > 11.8 , "success",
-                                         ifelse(round(Ironperperson(), digits=2) < 7.96, "danger",
-                                                "warning")),
+                          caption = h4("Iron per person per day"),
+                          color = ifelse(round(Ironperperson(), digits=2) > 13.7 , "success", "danger"),
                           icon = "fa-utensils")
 })
 
@@ -639,11 +628,8 @@ VitAperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(VitAperperson(), digits=3), "mg"))),
-                          caption = paste("<h4>Vitamin A per person per day</h4>",
-                                          sep =""),
-                          color = ifelse(round(VitAperperson(), digits=3) > 0.103 , "success",
-                                         ifelse(round(VitAperperson(), digits=3) < 0.041, "danger",
-                                                "warning")),
+                          caption = h4("Vitamin A per person per day"),
+                          color = ifelse(round(VitAperperson(), digits=3) > 0.868 , "success", "danger"),
                           icon = "fa-utensils"
                           )
 })

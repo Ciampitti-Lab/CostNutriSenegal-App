@@ -1,8 +1,9 @@
 Variable,Unit
-NCFI,FCFA
-KCal,Kcal per person per day
-GProtien,g per person per day
-GFat,g per person per day
-GCal,mg per person per day
-GIron,mg per person per day
-GVitA,mg per person per day
+NCFI,Net Cash Income (USD)
+KCal,Calories (Cal per person per day)
+GProtien,Protein (g per person per day)
+GFat,Fat (g per person per day)
+GCal,Calcium (mg per person per day)
+GIron,Iron (mg per person per day)
+GVitA,Vitamin A (mg per person per day)
+production,Grain yield ()
