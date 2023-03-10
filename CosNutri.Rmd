@@ -59,8 +59,11 @@ districts <- st_read("shapefiles/zonal_stats.shp", stringsAsFactors=FALSE, quiet
 ## 3. Data for cards ----
 dataFCards <- read.csv("data/Alternative_Scenarios_Card.csv", sep=",", dec=".")
 
-## 4. Units
+## 4. Units ----
 units <- read.csv("data/Units.csv", sep = ",", dec = ".")
+
+## 5. Planting date labels ----
+labels <- read.csv("data/filteredPlantingDates.csv", sep = ",", dec = ".")
 
 # Filtering functions import ----
 source(file = "functions.R")
@@ -112,14 +115,23 @@ shiny::radioButtons(inputId = "precipitationOrAlternative",
 
 # Appears when selected alternative managements ------
 
+output$pdPickerInput <- renderUI({
+  pdLabel <- label_filter(data = labels,
+                          district = input$districtSelection)
+  
+  shinyWidgets::pickerInput(inputId = "plantingDate",
+                          label = h4("Select a planting date:"),
+                          choices = pdLabel,
+                          multiple = FALSE
+        )
+  
+  
+})
+
 conditionalPanel(
   condition = "input.precipitationOrAlternative == 'alternativeManagements'",
   hr(),
-  shinyWidgets::pickerInput(inputId = "plantingDate",
-                          label = h4("Select a planting date:"),
-                          choices = c(1, 2, 3),
-                          multiple = FALSE
-        ),
+  uiOutput(outputId = "pdPickerInput"),
   shinyWidgets::pickerInput(inputId = "plantingDensity",
                           label = h4("Select a planting density:"),
                           choices = c("1.1 plant/m2" = 1.1,

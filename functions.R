@@ -5,8 +5,10 @@ library(stringr)
 library(ggplot2)
 library(scales)
 
+# Data for testing -----
 dataFCards <- read.csv("data/Alternative_Scenarios_Card.csv", sep=",", dec=".")
 units <- read.csv("data/Units.csv", sep = ",", dec = ".")
+labels <- read.csv("~/K-State/CosNutSenegal-App/data/filteredPlantingDates.csv", sep = ",", dec = ".")
 
 # 1.0 Map Rendering ----
 map_rendering <- function(districtDB, district){
@@ -48,7 +50,32 @@ map_rendering <- function(districtDB, district){
   
 }
 
-# Card Filtering ----
+# 2.0 Label Filtering ----
+label_filter <- function(data, district){
+  
+  distrito <- toString(district)
+  
+  dataFiltered <- data %>%
+    filter(district == distrito)
+  
+  array <- c(dataFiltered$id)
+  names(array) <- c(dataFiltered$Label)
+  
+  return(array)
+  
+}
+
+# distrito <- toString("KAOLACK")
+# 
+# dataFiltered <- labels %>%
+#   filter(district == distrito)
+# 
+# array <- c(dataFiltered$id)
+# names(array) <- c(dataFiltered$Label)
+# 
+# array
+
+# 3.0 Card Filtering ----
 card_filtering <- function(dataBase, district, precipitation, pd, pp, n, acronym, year){
   
   district <- toString(district)
@@ -83,7 +110,7 @@ card_filtering <- function(dataBase, district, precipitation, pd, pp, n, acronym
 #                         acronym = "GIron",
 #                         year = )
 
-# Graph Filtering ----
+# 4.0 Graph Filtering ----
 graph_filtering <- function(district, pd, pp, n, acronym, unitsTable){
   
   path <- paste("data/Data_for_Kansas_", district, ".xlsx", sep = "")
