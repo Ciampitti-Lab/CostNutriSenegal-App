@@ -65,6 +65,9 @@ units <- read.csv("data/Units.csv", sep = ",", dec = ".")
 ## 5. Planting date labels ----
 labels <- read.csv("data/filteredPlantingDates.csv", sep = ",", dec = ".")
 
+## 6. Precipitation data ----
+precipitation <- read.csv("data/precipitationData.csv", sep = ",", dec = ".")
+
 # Filtering functions import ----
 source(file = "functions.R")
 
@@ -148,24 +151,35 @@ conditionalPanel(
               sep = "")
 )
 
+# Appears when selected weather Based ------
+
+output$precipitationValue <- renderUI({
+   
+  arrayToShow <- precipitation %>%
+     filter(district == input$districtSelection)%>%
+    arrange(Precipitation)
+  
+  arrayToShow$Precipitation <- round(arrayToShow$Precipitation, digits = 0)
+  
+  sliderTextInput(inputId = "precipitationAmount",
+              label = h4("Precipitation amount (mm):"),
+              choices = arrayToShow$Precipitation)
+  
+  
+})
+
 conditionalPanel(
   condition = "input.precipitationOrAlternative == 'precipitation'",
   hr(),
-  sliderInput(inputId = "precipitationAmount",
-              label = h4("Precipitation amount:"),
-              min = 0,
-              max = 100,
-              value = 60,
-              step = 20,
-              sep = ""),
-  shinyWidgets::pickerInput(inputId = "plantingDensity",
+  uiOutput(outputId = "precipitationValue"),
+  shinyWidgets::pickerInput(inputId = "plantingDensityWB",
                           label = h4("Select a planting density:"),
                           choices = c("1.1 plant/m2" = 1.1,
                                       "3.3 plants/m2" = 3.3,
                                       "6.6 plants/m2" = 6.6),
                           multiple = FALSE
         ),
-  sliderInput(inputId = "nAmount",
+  sliderInput(inputId = "nAmountWB",
               label = h4("Amount of nitrogen fertilizer (kg/ha):"),
               min = 0,
               max = 100,
@@ -176,14 +190,56 @@ conditionalPanel(
 
 ```
 
-Box Chart
+Chart
 ----------------------------
+### Rain distribution
+```{r}
+# Render rain density -----
+output$densityPlot <- renderPlotly({
+  
+  Plot <- rain_density(district = input$districtSelection,
+                       precipitationDB = precipitation)
+
+  ggplotly(Plot)
+  
+})
+
+div(
+  id = "weatherPlot",
+  style = "height: 410px",
+  plotlyOutput("densityPlot")
+)
+
+```
+
 ### Scenarios chart
 
 <center>
 ```{r}
+
 # Select for Variable -----
-shinyWidgets::pickerInput(inputId = "variableSelection",
+output$selectVariablePlot <- renderUI({
+  if(input$precipitationOrAlternative == "precipitation"){
+
+    shinyWidgets::pickerInput(inputId = "variableSelection",
+                          label = h5("Select a variable to be plotted: "),
+                          choices = c("Net cash Income" = "NCFI", 
+                                      "Calories" = "KCal",
+                                      "Protein" = "GProtien",
+                                      "Fat" = "GFat",
+                                      "Calcium" = "GCal",
+                                      "Iron" = "GIron",
+                                      "Vitamin A" = "GVitA"),
+                          multiple = FALSE,
+                          inline = TRUE,
+                          width = "fit"
+        )
+
+  }
+
+  else if(input$precipitationOrAlternative == "alternativeManagements"){
+
+    shinyWidgets::pickerInput(inputId = "variableSelection",
                           label = h5("Select a variable to be plotted: "),
                           choices = c("Net cash Income" = "NCFI", 
                                       "Calories" = "KCal",
@@ -197,32 +253,43 @@ shinyWidgets::pickerInput(inputId = "variableSelection",
                           inline = TRUE,
                           width = "fit"
         )
+  }
+})
+
+uiOutput(outputId = "selectVariablePlot")
+
 ```
 </center>
 
 ```{r}
-
+# Render Plot -----
 output$boxPlot <- renderPlotly({
-  
+
   if(input$precipitationOrAlternative == "precipitation"){
-    
-    
-    
+
+    Plot <- graph_filtering_WB(district = input$districtSelection,
+                               pp = input$plantingDensityWB,
+                               n = input$nAmountWB,
+                               acronym = input$variableSelection,
+                               precipitationDB = precipitation,
+                               precipitationValue = input$precipitationAmount,
+                               unitsTable = units)
+
   }
-  
+
   else if(input$precipitationOrAlternative == "alternativeManagements"){
-    
-    boxPlot <- graph_filtering(district = input$districtSelection,
+
+    Plot <- graph_filtering(district = input$districtSelection,
                               pd = input$plantingDate,
                               pp = input$plantingDensity,
                               n = input$nAmount,
                               acronym = input$variableSelection,
                               unitsTable = units)
-    
+
   }
-  
-  ggplotly(boxPlot)
-  
+
+  ggplotly(Plot)
+
 })
 
 div(
@@ -241,7 +308,10 @@ Checkbox & Legends{data-height=180}
 <center>
 ```{r}
 # Select Alternative Scenarios ----
-shinyWidgets::radioGroupButtons(inputId = "yearSelection",
+output$radioButton <- renderUI({
+  
+   if(input$precipitationOrAlternative == "alternativeManagements"){
+     shinyWidgets::radioGroupButtons(inputId = "yearSelection",
                                   label = "Select a year to show on the cards",
                                   choices = c("2016" = 1,
                                               "2017" = 2,
@@ -250,7 +320,14 @@ shinyWidgets::radioGroupButtons(inputId = "yearSelection",
                                               "2020" = 5
                                               ),
                                   status = "primary"
-  )
+    )
+    
+  }
+  
+})
+
+uiOutput(outputId = "radioButton")
+
 ```
 </center>
 ```{r}
@@ -271,12 +348,32 @@ Cards 1
 # Value box of Seed cost ----------
 seedCost <- reactive({
   
-  productionCost <- productionCost %>%
+  if(input$precipitationOrAlternative == "alternativeManagements"){
+    
+    productionCost <- productionCost %>%
       dplyr::filter(planting_date == input$plantingDate,
                     plantig_density == input$plantingDensity,
                     nitrogen_fertilizer == input$nAmount)
     
-  cost = productionCost$seed_cost
+    cost = productionCost$seed_cost
+  
+  }
+  else if(input$precipitationOrAlternative == "precipitation"){
+    
+    precipitationDB <- precipitation %>%
+      filter(district == input$districtSelection,
+            Precipitation == input$precipitationAmount)
+    
+    pd <- precipitationDB$planting_date_id
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == pd,
+                    plantig_density == input$plantingDensityWB,
+                    nitrogen_fertilizer == input$nAmountWB)
+    
+    cost = productionCost$seed_cost
+    
+  }
   
   cost
   
@@ -299,12 +396,32 @@ flexdashboard::renderValueBox({
 # Value box of Nitrogen cost ----------
 NCost <- reactive({
   
-  productionCost <- productionCost %>%
+  if(input$precipitationOrAlternative == "alternativeManagements"){
+    
+    productionCost <- productionCost %>%
       dplyr::filter(planting_date == input$plantingDate,
                     plantig_density == input$plantingDensity,
                     nitrogen_fertilizer == input$nAmount)
     
   cost = productionCost$nitrogen_cost
+  
+  }
+  else if(input$precipitationOrAlternative == "precipitation"){
+    
+    precipitationDB <- precipitation %>%
+    filter(district == input$districtSelection,
+           Precipitation == input$precipitationAmount)
+    
+    pd <- precipitationDB$planting_date_id
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == pd,
+                    plantig_density == input$plantingDensityWB,
+                    nitrogen_fertilizer == input$nAmountWB)
+    
+    cost = productionCost$nitrogen_cost
+    
+  }
   
   cost
   
@@ -329,18 +446,19 @@ KCalperperson <- reactive({
   
   if(input$precipitationOrAlternative == "precipitation"){
     
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           precipitation = TRUE,
-                           acronym = "KCal",
-                           year = input$yearSelection)
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "KCal",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
   }
   
   else if(input$precipitationOrAlternative == "alternativeManagements") {
     
     cost <- card_filtering(dataBase = dataFCards,
                            district = input$districtSelection,
-                           precipitation = FALSE,
                            pd = input$plantingDate,
                            pp = input$plantingDensity,
                            n = input$nAmount,
@@ -363,7 +481,6 @@ flexdashboard::renderValueBox({
 
 ```
 
-
 ### Protein per person per day
 ```{r}
 
@@ -372,18 +489,19 @@ Proteinperperson <- reactive({
   
   if(input$precipitationOrAlternative == "precipitation"){
     
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           precipitation = TRUE,
-                           acronym = "GProtien",
-                           year = input$yearSelection)
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GProtien",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
   }
   
   else if(input$precipitationOrAlternative == "alternativeManagements") {
     
     cost <- card_filtering(dataBase = dataFCards,
                            district = input$districtSelection,
-                           precipitation = FALSE,
                            pd = input$plantingDate,
                            pp = input$plantingDensity,
                            n = input$nAmount,
@@ -414,18 +532,20 @@ Fatperperson <- reactive({
   
   if(input$precipitationOrAlternative == "precipitation"){
     
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           precipitation = TRUE,
-                           acronym = "GFat",
-                           year = input$yearSelection)
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GFat",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
   }
   
   else if(input$precipitationOrAlternative == "alternativeManagements") {
     
     cost <- card_filtering(dataBase = dataFCards,
                            district = input$districtSelection,
-                           precipitation = FALSE,
                            pd = input$plantingDate,
                            pp = input$plantingDensity,
                            n = input$nAmount,
@@ -457,12 +577,32 @@ Cards 2
 # Value box of Total production cost ----------
 totalCost <- reactive({
   
-  productionCost <- productionCost %>%
+  if(input$precipitationOrAlternative == "alternativeManagements"){
+    
+    productionCost <- productionCost %>%
       dplyr::filter(planting_date == input$plantingDate,
                     plantig_density == input$plantingDensity,
                     nitrogen_fertilizer == input$nAmount)
     
   cost = productionCost$total_cost
+  
+  }
+  else if(input$precipitationOrAlternative == "precipitation"){
+    
+    precipitationDB <- precipitation %>%
+    filter(district == input$districtSelection,
+           Precipitation == input$precipitationAmount)
+    
+    pd <- precipitationDB$planting_date_id
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == pd,
+                    plantig_density == input$plantingDensityWB,
+                    nitrogen_fertilizer == input$nAmountWB)
+    
+    cost = productionCost$total_cost
+    
+  }
   
   cost
   
@@ -486,18 +626,20 @@ netCashIncome <- reactive({
   
   if(input$precipitationOrAlternative == "precipitation"){
     
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           precipitation = TRUE,
-                           acronym = "NCFI",
-                           year = input$yearSelection)
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "NCFI",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
   }
   
   else if(input$precipitationOrAlternative == "alternativeManagements") {
     
     cost <- card_filtering(dataBase = dataFCards,
                            district = input$districtSelection,
-                           precipitation = FALSE,
                            pd = input$plantingDate,
                            pp = input$plantingDensity,
                            n = input$nAmount,
@@ -530,18 +672,20 @@ Calciumperperson <- reactive({
   
   if(input$precipitationOrAlternative == "precipitation"){
     
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           precipitation = TRUE,
-                           acronym = "GCal",
-                           year = input$yearSelection)
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GCal",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
   }
   
   else if(input$precipitationOrAlternative == "alternativeManagements") {
     
     cost <- card_filtering(dataBase = dataFCards,
                            district = input$districtSelection,
-                           precipitation = FALSE,
                            pd = input$plantingDate,
                            pp = input$plantingDensity,
                            n = input$nAmount,
@@ -572,18 +716,20 @@ Ironperperson <- reactive({
   
   if(input$precipitationOrAlternative == "precipitation"){
     
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           precipitation = TRUE,
-                           acronym = "GIron",
-                           year = input$yearSelection)
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GIron",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
   }
   
   else if(input$precipitationOrAlternative == "alternativeManagements") {
     
     cost <- card_filtering(dataBase = dataFCards,
                            district = input$districtSelection,
-                           precipitation = FALSE,
                            pd = input$plantingDate,
                            pp = input$plantingDensity,
                            n = input$nAmount,
@@ -613,18 +759,20 @@ VitAperperson <- reactive({
   
   if(input$precipitationOrAlternative == "precipitation"){
     
-    cost <- card_filtering(dataBase = dataFCards,
-                           district = input$districtSelection,
-                           precipitation = TRUE,
-                           acronym = "GVitA",
-                           year = input$yearSelection)
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GVitA",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
   }
   
   else if(input$precipitationOrAlternative == "alternativeManagements") {
     
     cost <- card_filtering(dataBase = dataFCards,
                            district = input$districtSelection,
-                           precipitation = FALSE,
                            pd = input$plantingDate,
                            pp = input$plantingDensity,
                            n = input$nAmount,

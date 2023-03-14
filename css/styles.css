@@ -23,9 +23,9 @@
     }
 }*/
 
-/* ERROR  
-.shiny-output-error { visibility: hidden; }
-.shiny-output-error:before { visibility: hidden; }
+/* ERROR  */
+.shiny-output-error { visibility: hidden !important; }
+.shiny-output-error:before { visibility: hidden !important; }
 
 /* FONTS */
 
