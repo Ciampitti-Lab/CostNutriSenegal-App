@@ -9,7 +9,7 @@ library(scales)
 # dataFCards <- read.csv("data/Alternative_Scenarios_Card.csv", sep=",", dec=".")
 # units <- read.csv("data/Units.csv", sep = ",", dec = ".")
 # labels <- read.csv("~/K-State/CosNutSenegal-App/data/filteredPlantingDates.csv", sep = ",", dec = ".")
-# precipitation <- read.csv("~/K-State/CosNutSenegal-App/data/precipitationData.csv", sep = ",", dec = ".")
+#precipitation <- read.csv("~/K-State/CosNutSenegal-App/data/precipitationData.csv", sep = ",", dec = ".")
 
 # 1.0 Map Rendering ----
 map_rendering <- function(districtDB, district){
@@ -330,16 +330,35 @@ graph_filtering_WB <- function(district, pp, n, acronym, precipitationDB, precip
   return(distribution_curve)
   
 }
-  ## 4.3 Weather Based ----
-rain_density <- function(district, precipitationDB){
+# precipitationDB <- precipitation %>%
+#   filter(district == "KOLDA")
+# 
+# quartile <- quantile(precipitationDB$Precipitation, probs = c(0, 0.25, 0.5, 0.75, 1))
+# quartile[1]
+
+  ## 4.3 Rain Density ----
+rain_density <- function(district, precipitationDB, line){
   
   distrito <- toString(district)
   
   precipitationDB <- precipitationDB %>%
     filter(district == distrito)
   
+  quartile <- quantile(precipitationDB$Precipitation, probs = c(0, 0.25, 0.5, 0.75, 1))
+  
   density_curve <- ggplot(precipitationDB, aes(x=Precipitation))+
     geom_density()+
+    geom_vline(xintercept = quartile[2], size = 1,
+               linetype = "dashed", color = "#a31212")+
+    geom_vline(xintercept = quartile[3], size = 1,
+               linetype = "dashed", color = "#f1ff57")+
+    geom_vline(xintercept = quartile[4], size = 1,
+               linetype = "dashed", color = "#0e6e15")+
+    geom_segment(x = line,
+                 xend = line,
+                 y = 0,
+                 yend = 0.5,
+                 color = "#166e95")+
     theme(
       panel.background = element_rect(fill = "#e3ecef",
                                       colour = "#e3ecef",

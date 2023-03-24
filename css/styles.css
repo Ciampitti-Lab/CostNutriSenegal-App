@@ -6,13 +6,7 @@
         overflow-y: scroll !important;
     }
 }
-/*
-    .chart-shim {
-        overflow-y: scroll !important;
-        overflow-x: scroll !important;
-    }
-}
-*/
+
 @media screen and (max-width: 767px) {
     .sidebar {
         width: 350px !important;
@@ -21,7 +15,7 @@
     .chart-shim {
         overflow-y: scroll !important;
     }
-}*/
+}
 
 /* ERROR  */
 .shiny-output-error { visibility: hidden !important; }
@@ -77,7 +71,7 @@ body{
 
 h5{
   font-family: 'Montserrat', sans-serif;
-  color: #e3ecef;
+  color: #1c5f7e;
 }
 
 h4{
@@ -95,7 +89,6 @@ span{
 
 h2, p, h3{
   font-family: 'Montserrat', sans-serif;
-  /*color: #1c5f7e;*/
 }
 
 .chart-title {
@@ -130,16 +123,6 @@ h2, p, h3{
 body hr {
     border-color: #ffffff45;
     margin: 10px 0;
-}
-
-#section-section{
-  background-color: #e3ecef;
-}
-#map{
-  background-color: #1c5f7e;
-}
-#ratio{
-  background-color: #1c5f7e;
 }
 
 /* SELECTIZE */
@@ -247,11 +230,6 @@ input[type="radio"]:checked::before {
     display: none;
 }
 
-/* GUAGE */
-#section-price-ratio{
-  background-color: white;
-}
-
 /* VALUE BOX */
 .value-output{
   color: white !important;
@@ -274,3 +252,12 @@ input[type="radio"]:checked::before {
   float: right;
   margin-right: 150px;
 }
+
+/* TABSET */
+.daughter{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+}
+
