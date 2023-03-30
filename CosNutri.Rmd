@@ -32,20 +32,20 @@ library(shinyWidgets)
 ## 2. Data Usage -----
 library(tidyverse)
 
-## 3. Design Help -----
-library(tippy)
-
-## 4. Map -----
+## 3. Map -----
 library(leaflet)
 library(sf)
 
-## 5. Data import ----
+## 4. Data import ----
 library(openxlsx)
 
-## 6. Graph ----
+## 5. Graph ----
 library(plotly)
 library(ggplot2)
 library(scales)
+
+## 6. Include HTML ----
+library(htmltools)
 
 # Data upload ---------
 
@@ -67,8 +67,9 @@ labels <- read.csv("data/filteredPlantingDates.csv", sep = ",", dec = ".")
 
 ## 6. Precipitation data ----
 precipitation <- read.csv("data/precipitationData.csv", sep = ",", dec = ".")
+precipitationFull <- read.csv("data/precipitationFullData.csv", sep = ",", dec = ".")
 
-# Filtering functions import ----
+# Functions import ----
 source(file = "functions.R")
 
 # Font awesome importation ----
@@ -87,7 +88,7 @@ Inputs {.sidebar data-width=350}
 
 # Select for Districts -----
 shinyWidgets::pickerInput(inputId = "districtSelection",
-                          label = h4("Select a District: "),
+                          label = h5("Select a District: "),
                           choices = c("Diourbel" = "DIOURBEL", 
                                       "Fatick" = "FATICK",
                                       "Kaffrine" = "KAFFRINE",
@@ -114,7 +115,7 @@ output$pdPickerInput <- renderUI({
                           district = input$districtSelection)
   
   shinyWidgets::pickerInput(inputId = "plantingDate",
-                          label = h4("Select a planting date:"),
+                          label = h5("Select a planting date:"),
                           choices = pdLabel,
                           multiple = FALSE
         )
@@ -127,14 +128,14 @@ conditionalPanel(
   hr(),
   uiOutput(outputId = "pdPickerInput"),
   shinyWidgets::pickerInput(inputId = "plantingDensity",
-                          label = h4("Select a planting density:"),
+                          label = h5("Select a planting density:"),
                           choices = c("1.1 plant/m2" = 1.1,
                                       "3.3 plants/m2" = 3.3,
                                       "6.6 plants/m2" = 6.6),
                           multiple = FALSE
         ),
   sliderInput(inputId = "nAmount",
-              label = h4("Amount of nitrogen fertilizer (kg/ha):"),
+              label = h5("Amount of nitrogen fertilizer (kg/ha):"),
               min = 0,
               max = 100,
               value = 60,
@@ -153,7 +154,7 @@ output$precipitationValue <- renderUI({
   arrayToShow$Precipitation <- round(arrayToShow$Precipitation, digits = 0)
   
   sliderTextInput(inputId = "precipitationAmount",
-              label = h4("Precipitation amount (mm):"),
+              label = h5("Precipitation amount during planting season (mm):"),
               choices = arrayToShow$Precipitation)
   
   
@@ -164,14 +165,14 @@ conditionalPanel(
   hr(),
   uiOutput(outputId = "precipitationValue"),
   shinyWidgets::pickerInput(inputId = "plantingDensityWB",
-                          label = h4("Select a planting density:"),
+                          label = h5("Select a planting density:"),
                           choices = c("1.1 plant/m2" = 1.1,
                                       "3.3 plants/m2" = 3.3,
                                       "6.6 plants/m2" = 6.6),
                           multiple = FALSE
         ),
   sliderInput(inputId = "nAmountWB",
-              label = h4("Amount of nitrogen fertilizer (kg/ha):"),
+              label = h5("Amount of nitrogen fertilizer (kg/ha):"),
               min = 0,
               max = 100,
               value = 60,
@@ -187,7 +188,7 @@ Chart
 # Variable selection -----
 output$variableSelection <- renderUI({
   shinyWidgets::pickerInput(inputId = "variableSelection",
-                          label = h5("Select a variable to be plotted: "),
+                          label = h4("Select a variable to be plotted: "),
                           choices = c("Net cash Income" = "NCFI", 
                                       "Calories" = "KCal",
                                       "Protein" = "GProtien",
@@ -219,7 +220,7 @@ output$boxPlot <- renderPlotly({
 output$densityPlot <- renderPlotly({
   
   Plot <- rain_density(district = input$districtSelection,
-                       precipitationDB = precipitation,
+                       precipitationDB = precipitationFull,
                        line = input$precipitationAmount)
 
   ggplotly(Plot, height=350, width = 500)
@@ -230,7 +231,7 @@ output$densityPlot <- renderPlotly({
 output$variableSelectionWB <- renderUI({
   
   shinyWidgets::pickerInput(inputId = "variableSelectionWB",
-                          label = h5("Select a variable to be plotted: "),
+                          label = h4("Select a variable to be plotted: "),
                           choices = c("Net cash Income" = "NCFI", 
                                       "Calories" = "KCal",
                                       "Protein" = "GProtien",
@@ -263,7 +264,7 @@ output$distributionPlot <- renderPlotly({
 
 tabsetPanel(type = "tabs",
             id = "tabselected",
-            tabPanel("Alternative Managements",
+            tabPanel("Alternative managements",
                      value=1,
                      div(
                        class = "daughter",
@@ -283,7 +284,7 @@ tabsetPanel(type = "tabs",
                      div(
                       class = "daughter",
                       div(
-                        h5("Rain distribution"),
+                        h4("Rain distribution during growing season"),
                         plotlyOutput("densityPlot")
                       ),
                       div(
@@ -380,8 +381,8 @@ seedCost <- reactive({
 
 flexdashboard::renderValueBox({
 
-  flexdashboard::valueBox(value = h1((paste(round(seedCost()), "USD"))),
-                          caption = h4("Seed cost"),
+  flexdashboard::valueBox(value = h2((paste(round(seedCost()), "USD"))),
+                          caption = h5("Seed cost per hectare"),
                           color = "#70aec3",
                           icon = "fa-dollar-sign")
 })
@@ -428,8 +429,8 @@ NCost <- reactive({
 
 flexdashboard::renderValueBox({
 
-  flexdashboard::valueBox(value = h1((paste(round(NCost()), "USD"))),
-                          caption = h4("Nitrogen fertilizer cost"),
+  flexdashboard::valueBox(value = h2((paste(round(NCost()), "USD"))),
+                          caption = h5("Nitrogen fertilizer cost per hectare"),
                           color = "#70aec3",
                           icon = "fa-dollar-sign")
 })
@@ -472,7 +473,7 @@ KCalperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(KCalperperson()), "Cal"))),
-                          caption = h4("Cal per person per day"),
+                          caption = h5("Cal per person per day"),
                           color = ifelse(round(KCalperperson(), digits=1) > 2306.4 , "success", "danger"),
                           icon = "fa-utensils")
 })
@@ -515,7 +516,7 @@ Proteinperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(Proteinperperson()), "grams"))),
-                          caption = h4("Protein per person per day"),
+                          caption = h5("Protein per person per day"),
                           color = ifelse(round(Proteinperperson(), digits=1) > 52.1 , "success", "danger"),
                           icon = "fa-utensils")
 })
@@ -559,7 +560,7 @@ Fatperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(Fatperperson()), "grams"))),
-                          caption = h4("Fat per person per day"),
+                          caption = h5("Fat per person per day"),
                           color = ifelse(round(Fatperperson(), digits=1) > 73.7 , "success", "danger"),
                           icon = "fa-utensils")
 })
@@ -609,8 +610,8 @@ totalCost <- reactive({
 
 flexdashboard::renderValueBox({
 
-  flexdashboard::valueBox(value = h1((paste(round(totalCost()), "USD"))),
-                          caption = h4("Total production cost"),
+  flexdashboard::valueBox(value = h2((paste(round(totalCost()), "USD"))),
+                          caption = h5("Total production cost per hectare"),
                           color = "#70aec3",
                           icon = "fa-dollar-sign")
 })
@@ -654,7 +655,7 @@ netCashIncome <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2(paste(round(netCashIncome()), "USD")),
-                          caption = paste("<h4>Net cash income <small style = 'color:white'>(x100)</small></h4>",
+                          caption = paste("<h5>Net cash income <small style = 'color:white'>(x100)</small></h5>",
                                           sep = ""),
                           color = "#70aec3",
                           icon = "fa-dollar-sign")
@@ -699,7 +700,7 @@ Calciumperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(Calciumperperson()), "mg"))),
-                          caption = h4("Calcium per person per day"),
+                          caption = h5("Calcium per person per day"),
                           color = ifelse(round(Calciumperperson(), digits=1) > 1446.7 , "success", "danger"),
                           icon = "fa-utensils")
 })
@@ -743,7 +744,7 @@ Ironperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(Ironperperson()), "mg"))),
-                          caption = h4("Iron per person per day"),
+                          caption = h5("Iron per person per day"),
                           color = ifelse(round(Ironperperson(), digits=2) > 13.7 , "success", "danger"),
                           icon = "fa-utensils")
 })
@@ -786,9 +787,18 @@ VitAperperson <- reactive({
 flexdashboard::renderValueBox({
 
   flexdashboard::valueBox(value = h2((paste(round(VitAperperson(), digits=3), "mg"))),
-                          caption = h4("Vitamin A per person per day"),
+                          caption = h5("Vitamin A per person per day"),
                           color = ifelse(round(VitAperperson(), digits=3) > 0.868 , "success", "danger"),
                           icon = "fa-utensils"
                           )
 })
 ```
+
+About
+============================
+
+```{r}
+htmltools::includeHTML(path = "about.html")
+```
+
+

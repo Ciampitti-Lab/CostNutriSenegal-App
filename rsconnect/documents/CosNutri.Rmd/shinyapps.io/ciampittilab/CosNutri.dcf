@@ -5,9 +5,9 @@ account: ciampittilab
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 8427583
-bundleId: 6958482
+bundleId: 7020357
 url: https://ciampittilab.shinyapps.io/CosNutri/
-when: 1678829964.90527
-lastSyncTime: 1678829964.90528
+when: 1680037076.26151
+lastSyncTime: 1680037076.26155
 asMultiple: FALSE
 asStatic: FALSE

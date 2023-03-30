@@ -9,7 +9,7 @@ library(scales)
 # dataFCards <- read.csv("data/Alternative_Scenarios_Card.csv", sep=",", dec=".")
 # units <- read.csv("data/Units.csv", sep = ",", dec = ".")
 # labels <- read.csv("~/K-State/CosNutSenegal-App/data/filteredPlantingDates.csv", sep = ",", dec = ".")
-#precipitation <- read.csv("~/K-State/CosNutSenegal-App/data/precipitationData.csv", sep = ",", dec = ".")
+# precipitation <- read.csv("~/K-State/CosNutSenegal-App/data/precipitationData.csv", sep = ",", dec = ".")
 
 # 1.0 Map Rendering ----
 map_rendering <- function(districtDB, district){
@@ -330,11 +330,6 @@ graph_filtering_WB <- function(district, pp, n, acronym, precipitationDB, precip
   return(distribution_curve)
   
 }
-# precipitationDB <- precipitation %>%
-#   filter(district == "KOLDA")
-# 
-# quartile <- quantile(precipitationDB$Precipitation, probs = c(0, 0.25, 0.5, 0.75, 1))
-# quartile[1]
 
   ## 4.3 Rain Density ----
 rain_density <- function(district, precipitationDB, line){
@@ -344,21 +339,21 @@ rain_density <- function(district, precipitationDB, line){
   precipitationDB <- precipitationDB %>%
     filter(district == distrito)
   
-  quartile <- quantile(precipitationDB$Precipitation, probs = c(0, 0.25, 0.5, 0.75, 1))
+  quartile <- quantile(precipitationDB$Rain, probs = c(0, 0.25, 0.5, 0.75, 1))
   
-  density_curve <- ggplot(precipitationDB, aes(x=Precipitation))+
+  density_curve <- ggplot(precipitationDB, aes(x=Rain))+
     geom_density()+
     geom_vline(xintercept = quartile[2], size = 1,
-               linetype = "dashed", color = "#a31212")+
+               linetype = "dashed", color = "#166e95")+
     geom_vline(xintercept = quartile[3], size = 1,
-               linetype = "dashed", color = "#f1ff57")+
+               linetype = "dashed", color = "#166e95")+
     geom_vline(xintercept = quartile[4], size = 1,
-               linetype = "dashed", color = "#0e6e15")+
+               linetype = "dashed", color = "#166e95")+
     geom_segment(x = line,
                  xend = line,
                  y = 0,
                  yend = 0.5,
-                 color = "#166e95")+
+                 color = "red")+
     theme(
       panel.background = element_rect(fill = "#e3ecef",
                                       colour = "#e3ecef",
@@ -385,7 +380,8 @@ rain_density <- function(district, precipitationDB, line){
     labs(y = "Density",
          x = "Precipitation (mm)")+
     scale_y_continuous(labels = comma)+
-    theme_bw()
+    theme_bw()+
+    annotate("text", x=c(quartile[2], quartile[3], quartile[4]), y=-0.0001, label=c("25%","50%", "75%"), hjust=0)
   
   return(density_curve)
   
