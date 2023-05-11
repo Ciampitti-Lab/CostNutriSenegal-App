@@ -218,3 +218,9 @@ body hr {
   padding: 10px;
 }
 
+/* ABOUT */
+#section-about{
+  background-color: #1c5f7e;
+  padding: 50px;
+  text-align: justify;
+}

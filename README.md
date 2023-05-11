@@ -22,7 +22,21 @@ The objective of this dashboard was to generate an interactive platform to displ
 
 ## Simulations Overview
 
-**(About section)**
+### Nutrient and Economic brief explanation
+The focus group of this research was farmers who practice millet and groundnut agriculture, since these crops are usually grown in rotation. All economic and nutrition indicators included in this application apply to these farmers. The net cash farm income (NCFI) as well as the nutrition indicators were calculated using the FARMSIM model.
+
+There are four economic and six nutrition indicators displayed in the consortium application. One economic indicator is net cash farm income (NCFI) whose units are in USD. NCFI is the total profit calculated from the difference between total income and costs over one year. This variable is important for determining the total income of the typical farmer at the end of a year. The other three economic indicators are seed cost (USD/hectare), nitrogen cost, (USD/hectare) and total cost (USD/hectare) (seed cost plus nitrogen cost). These costs are important to understanding the costs of intervention methods to improve crop production.
+
+The nutrition indicators are Calories (Calories/day), protein (grams/day), fat (grams/day), calcium (milligrams/day), iron (milligrams/day), and vitamin A (milligrams/day). These are important nutrients at every stage of human development and play an important role in a healthy diet.
+
+### Simulations brief explanation
+The data used in the app were generated from simulations using the Agricultural Production Systems Simulator (APSIM) software platform. However, to produce it, were followed four steps:
+1. Literature review about Senegal pearl-millet production and its geospatial distribution;
+2. A APSIM-Millet model was calibrated and evalueted using in-field data (12 districts and 351 locations);A APSIM-Millet model was calibrated and evalueted using in-field data (12 districts and 351 locations);
+3. For each one of the 351 locations, 54 scenarios were simulated, from 1990 to 2021, varying levels of nitrogen, plant density and planting dates;
+4. Recommendations based on the simulations outputs aiming he highest productivity with the lowest input of resources.
+
+To know more about the data obtaining, processement and results, read the paper bellow: https://www.sciencedirect.com/science/article/pii/S0378377423000380 
 
 ---
 
@@ -45,9 +59,8 @@ The replacement of departments for district was made manually.
 
 The framework chosen to build the app was Shiny using R computational language due to the facilitation to create and use an interactive and free-to-use dashboard.
 
-The main idea to display the data was a sidebar and a main screen as shown below:
+The main idea to display the data was a sidebar and a main screen. In the sidebar, users can:
 
-In the sidebar, users can:
 1. Select the district, with a reactive map of Senegal, so they are able to see on it where the selected district is;
 2. Planting density;
 3. Amount of nitrogen fertilizer and;

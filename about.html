@@ -1,1 +1,75 @@
-<h1>Hello World</h1>
+<h2>
+    Nutrient and Economic brief explanation
+</h2>
+<hr>
+<p>
+    The focus group of this research was farmers who practice millet and groundnut agriculture, since these crops are usually grown in rotation.
+    All economic and nutrition indicators included in this application apply to these farmers.
+    The net cash farm income (NCFI) as well as the nutrition indicators were calculated using the FARMSIM model.
+</p>
+<p>
+    There are four economic and six nutrition indicators displayed in the consortium application.
+    One economic indicator is net cash farm income (NCFI) whose units are in USD.
+    NCFI is the total profit calculated from the difference between total income and costs over one year.
+    This variable is important for determining the total income of the typical farmer at the end of a year.
+    The other three economic indicators are seed cost (USD/hectare), nitrogen cost, (USD/hectare) and total cost (USD/hectare) (seed cost plus nitrogen cost).
+    These costs are important to understanding the costs of intervention methods to improve crop production.
+</p>
+<p>
+    The nutrition indicators are Calories (Calories/day), protein (grams/day), fat (grams/day), calcium (milligrams/day), iron (milligrams/day), and vitamin A (milligrams/day).
+    These are important nutrients at every stage of human development and play an important role in a healthy diet.
+</p>
+<h2>
+    Simulations brief explanation
+</h2>
+<hr>
+<p>
+    The data used in the app were generated from simulations using the Agricultural Production Systems Simulator (APSIM) software platform.
+    However, to produce it, were followed four steps:
+</p>
+<ol>
+    <li>Literature review about Senegal pearl-millet production and its geospatial distribution;</li>
+    <li>A APSIM-Millet model was calibrated and evalueted using in-field data (12 districts and 351 locations);</li>
+    <li>For each one of the 351 locations, 54 scenarios were simulated, from 1990 to 2021, varying levels of nitrogen, plant density and planting dates;</li>
+    <li>Recommendations based on the simulations outputs aiming he highest productivity with the lowest input of resources.</li>
+</ol>
+<p>
+    To know more about the data obtaining, processement and results, read the <a href="https://www.sciencedirect.com/science/article/pii/S0378377423000380" target="_blank">paper</a>
+</p>
+<h2>
+    App brief explanation
+</h2>
+<hr>
+<p>
+    The data used in this dashboard are mainly the iterations (both 500 and main values) and rain data of Senegal collected since 1990.
+</p>
+<p>
+    The main idea to display the data was a sidebar and a main screen. In the sidebar, users can:
+</p>
+<ol>
+    <li>Select the district, with a reactive map of Senegal, so they are able to see on it where the selected district is;</li>
+    <li>Planting density;</li>
+    <li>Amount of nitrogen fertilizer and;</li>
+    <li>Planting date or precipitation during pearl millet growing season;</li>
+</ol>
+
+<p>
+    On the main screen, there is a tab selection and value cards. The tab selection allows the users to choose between "Alternative managements" and "Weather based". Selecting these options, the item number 4 in the sidebar list above, the graphs and the years' selection change.
+</p>
+<p>
+    Selecting the Alternative management tab, users can:
+</p>
+<ul>
+    <li>Select a planting date as input (each district has different planting dates);</li>
+    <li>Visualize a box plot rendering 500 iterations of 2016, 17, 18, 19 and 2021 for the variable selected in the selectize located in the left and;</li>
+    <li>Based on the box plot, the user can select a year and the value cards will display the mean values of that year for all variables. The value cards for nutrition also change their colors if the value is above or under the recommendation.</li>
+</ul>
+
+<p>
+    Selecting the Weather based tab, users can:
+</p>
+<ul>
+    <li>Select a precipitation amount during the pearl millet growing season. Those values can change depending on the district selected. The slide values were obtained by manipulating rain data of districts during the growing season of 2016-2021;</li>
+    <li>Visualize a density and a distribution plot. The density plot displays the rain data during the growing seasons for selected district over 32 years. The distribution plot displays the values' distribution of the selected variable over the 500 iterations;</li>
+    <li>Since for each precipitation value selected, there is a year embedded, there was no need of a radio check for year selection for value cards.</li>
+</ul>
