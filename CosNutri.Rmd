@@ -1,0 +1,804 @@
+---
+title: "CosNutri Senegal App"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    css: css/styles.css
+    logo: www/Logo.png
+runtime: shiny
+resource_files:
+- data/Data_for_Kansas_DIOURBEL.xlsx
+- data/Data_for_Kansas_FATICK.xlsx
+- data/Data_for_Kansas_KAFFRINE.xlsx
+- data/Data_for_Kansas_KAOLACK.xlsx
+- data/Data_for_Kansas_KOLDA.xlsx
+- data/Data_for_Kansas_THIES.xlsx
+- shapefiles/zonal_stats.dbf
+- shapefiles/zonal_stats.prj
+- shapefiles/zonal_stats.shx
+---
+
+```{r setup, include=FALSE}
+# Libraries ----
+
+## 1. App -----
+library(shiny)
+library(flexdashboard)
+library(shinydashboard)
+library(shinythemes)
+library(shinyWidgets)
+
+## 2. Data Usage -----
+library(tidyverse)
+
+## 3. Map -----
+library(leaflet)
+library(sf)
+
+## 4. Data import ----
+library(openxlsx)
+
+## 5. Graph ----
+library(plotly)
+library(ggplot2)
+library(scales)
+
+## 6. Include HTML ----
+library(htmltools)
+
+# Data upload ---------
+
+## 1. Cost ----
+productionCost <- read.csv("data/pearl_millet_management_costs.csv", sep=",", dec=".")
+
+## 2. Map -----
+Sys.setenv(SHAPE_RESTORE_SHX="YES")
+districts <- st_read("shapefiles/zonal_stats.shp", stringsAsFactors=FALSE, quiet=TRUE)
+
+## 3. Data for cards ----
+dataFCards <- read.csv("data/Alternative_Scenarios_Card.csv", sep=",", dec=".")
+
+## 4. Units ----
+units <- read.csv("data/Units.csv", sep = ",", dec = ".")
+
+## 5. Planting date labels ----
+labels <- read.csv("data/filteredPlantingDates.csv", sep = ",", dec = ".")
+
+## 6. Precipitation data ----
+precipitation <- read.csv("data/precipitationData.csv", sep = ",", dec = ".")
+precipitationFull <- read.csv("data/precipitationFullData.csv", sep = ",", dec = ".")
+
+# Functions import ----
+source(file = "functions.R")
+
+# Font awesome importation ----
+tags$script(src="https://kit.fontawesome.com/e66b2723d1.js")
+tags$head( tags$style(HTML(".fa{font-size: 10px;}")))
+
+```
+
+
+Visualization
+============================
+
+Inputs {.sidebar data-width=350}
+----------------------------
+```{r}
+
+# Select for Districts -----
+shinyWidgets::pickerInput(inputId = "districtSelection",
+                          label = h5("Select a District: "),
+                          choices = c("Diourbel" = "DIOURBEL", 
+                                      "Fatick" = "FATICK",
+                                      "Kaffrine" = "KAFFRINE",
+                                      "Kaolack" = "KAOLACK",
+                                      "Kolda" = "KOLDA",
+                                      "Thies" = "THIES"),
+                          multiple = FALSE
+        )
+
+# Generating Map ----
+output$districtMap <- renderLeaflet({
+
+    map_rendering(districts, input$districtSelection)
+
+})
+
+# Showing the map ----
+leafletOutput("districtMap", height = 225)
+
+# Appears when selected alternative managements ------
+
+output$pdPickerInput <- renderUI({
+  pdLabel <- label_filter(data = labels,
+                          district = input$districtSelection)
+  
+  shinyWidgets::pickerInput(inputId = "plantingDate",
+                          label = h5("Select a planting date:"),
+                          choices = pdLabel,
+                          multiple = FALSE
+        )
+  
+  
+})
+
+conditionalPanel(
+  condition = "input.tabselected == 1",
+  hr(),
+  uiOutput(outputId = "pdPickerInput"),
+  shinyWidgets::pickerInput(inputId = "plantingDensity",
+                          label = h5("Select a planting density:"),
+                          choices = c("1.1 plant/m2" = 1.1,
+                                      "3.3 plants/m2" = 3.3,
+                                      "6.6 plants/m2" = 6.6),
+                          multiple = FALSE
+        ),
+  sliderInput(inputId = "nAmount",
+              label = h5("Amount of nitrogen fertilizer (kg/ha):"),
+              min = 0,
+              max = 100,
+              value = 60,
+              step = 20,
+              sep = "")
+)
+
+# Appears when selected weather Based ------
+
+output$precipitationValue <- renderUI({
+   
+  arrayToShow <- precipitation %>%
+     filter(district == input$districtSelection)%>%
+    arrange(Precipitation)
+  
+  arrayToShow$Precipitation <- round(arrayToShow$Precipitation, digits = 0)
+  
+  sliderTextInput(inputId = "precipitationAmount",
+              label = h5("Precipitation amount during planting season (mm):"),
+              choices = arrayToShow$Precipitation)
+  
+  
+})
+
+conditionalPanel(
+  condition = "input.tabselected == 2",
+  hr(),
+  uiOutput(outputId = "precipitationValue"),
+  shinyWidgets::pickerInput(inputId = "plantingDensityWB",
+                          label = h5("Select a planting density:"),
+                          choices = c("1.1 plant/m2" = 1.1,
+                                      "3.3 plants/m2" = 3.3,
+                                      "6.6 plants/m2" = 6.6),
+                          multiple = FALSE
+        ),
+  sliderInput(inputId = "nAmountWB",
+              label = h5("Amount of nitrogen fertilizer (kg/ha):"),
+              min = 0,
+              max = 100,
+              value = 60,
+              step = 20,
+              sep = "")
+)
+
+```
+
+Chart
+----------------------------
+```{r}
+# Variable selection -----
+output$variableSelection <- renderUI({
+  shinyWidgets::pickerInput(inputId = "variableSelection",
+                          label = h4("Select a variable to be plotted: "),
+                          choices = c("Net cash Income" = "NCFI", 
+                                      "Calories" = "KCal",
+                                      "Protein" = "GProtien",
+                                      "Fat" = "GFat",
+                                      "Calcium" = "GCal",
+                                      "Iron" = "GIron",
+                                      "Vitamin A" = "GVitA",
+                                      "Production" = "production"),
+                          multiple = FALSE,
+        )
+})
+
+# Box Plot -----
+output$boxPlot <- renderPlotly({
+
+  Plot <- graph_filtering(district = input$districtSelection,
+                              pd = input$plantingDate,
+                              pp = input$plantingDensity,
+                              n = input$nAmount,
+                              acronym = input$variableSelection,
+                              unitsTable = units)
+
+
+  ggplotly(Plot)
+
+})
+
+# Density Chart ------
+output$densityPlot <- renderPlotly({
+  
+  Plot <- rain_density(district = input$districtSelection,
+                       precipitationDB = precipitationFull,
+                       line = input$precipitationAmount)
+
+  ggplotly(Plot, height=350, width = 500)
+  
+})
+
+# Variable selection for weather based option ------
+output$variableSelectionWB <- renderUI({
+  
+  shinyWidgets::pickerInput(inputId = "variableSelectionWB",
+                          label = h4("Select a variable to be plotted: "),
+                          choices = c("Net cash Income" = "NCFI", 
+                                      "Calories" = "KCal",
+                                      "Protein" = "GProtien",
+                                      "Fat" = "GFat",
+                                      "Calcium" = "GCal",
+                                      "Iron" = "GIron",
+                                      "Vitamin A" = "GVitA"),
+                          multiple = FALSE,
+                          inline = TRUE,
+                          width = "fit"
+        )
+  
+})
+
+# Distribution Plot ------
+output$distributionPlot <- renderPlotly({
+
+    Plot <- graph_filtering_WB(district = input$districtSelection,
+                               pp = input$plantingDensityWB,
+                               n = input$nAmountWB,
+                               acronym = input$variableSelectionWB,
+                               precipitationDB = precipitation,
+                               precipitationValue = input$precipitationAmount,
+                               unitsTable = units)
+
+
+  ggplotly(Plot, height=337, width = 500)
+
+})
+
+tabsetPanel(type = "tabs",
+            id = "tabselected",
+            tabPanel("Alternative managements",
+                     value=1,
+                     div(
+                       class = "daughter",
+                       div(
+                         uiOutput(outputId = "variableSelection")
+                       ),
+                       div(style="padding-left: 15px",
+                           plotlyOutput("boxPlot",
+                                        height = 350,
+                                        width = "fit-content")
+                           )
+                       
+                     )
+            ),
+            tabPanel("Weather based",
+                     value=2,
+                     div(
+                      class = "daughter",
+                      div(
+                        h4("Rain distribution during growing season"),
+                        plotlyOutput("densityPlot")
+                      ),
+                      div(
+                        style="padding-left: 25px",
+                        uiOutput(outputId = "variableSelectionWB"),
+                        plotlyOutput("distributionPlot")
+                      )
+                    )
+            )
+          )
+```
+
+Checkbox & Legends{data-height=100}
+----------------------------
+
+### Year selection and nutritional legend
+
+```{r}
+# Select Alternative Scenarios ----
+output$radioButton <- renderUI({
+  
+   if(input$tabselected == 1){
+     shinyWidgets::radioGroupButtons(inputId = "yearSelection",
+                                  label = "Select a year to show on the cards",
+                                  choices = c("2016" = 1,
+                                              "2017" = 2,
+                                              "2018" = 3,
+                                              "2019" = 4,
+                                              "2020" = 5
+                                              ),
+                                  status = "primary"
+    )
+    
+  }
+  
+})
+
+div(
+  class = "container",
+  # Select Alternative Scenarios ----
+  column(
+    width = 6,
+    uiOutput(outputId = "radioButton")
+  ),
+  # Legend for nutrition ----
+  column(
+    width = 6,
+    tags$img(src = "www/CardsLegend1.png",
+           id = "cardLegend")
+  )
+)
+```
+
+Cards 1
+----------------------------
+
+### Seed Cost
+```{r}
+
+# Value box of Seed cost ----------
+seedCost <- reactive({
+  
+  if(input$tabselected == 1){
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+    cost = productionCost$seed_cost
+  
+  }
+  else if(input$tabselected == 2){
+    
+    precipitationDB <- precipitation %>%
+      filter(district == input$districtSelection,
+            Precipitation == input$precipitationAmount)
+    
+    pd <- precipitationDB$planting_date_id
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == pd,
+                    plantig_density == input$plantingDensityWB,
+                    nitrogen_fertilizer == input$nAmountWB)
+    
+    cost = productionCost$seed_cost
+    
+  }
+  
+  cost
+  
+})
+
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(seedCost()), "USD"))),
+                          caption = h5("Seed cost per hectare"),
+                          color = "#70aec3",
+                          icon = "fa-dollar-sign")
+})
+
+```
+
+### Nitrogen Cost
+```{r}
+
+# Value box of Nitrogen cost ----------
+NCost <- reactive({
+  
+  if(input$tabselected == 1){
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+  cost = productionCost$nitrogen_cost
+  
+  }
+  else if(input$tabselected == 2){
+    
+    precipitationDB <- precipitation %>%
+    filter(district == input$districtSelection,
+           Precipitation == input$precipitationAmount)
+    
+    pd <- precipitationDB$planting_date_id
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == pd,
+                    plantig_density == input$plantingDensityWB,
+                    nitrogen_fertilizer == input$nAmountWB)
+    
+    cost = productionCost$nitrogen_cost
+    
+  }
+  
+  cost
+  
+})
+
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(NCost()), "USD"))),
+                          caption = h5("Nitrogen fertilizer cost per hectare"),
+                          color = "#70aec3",
+                          icon = "fa-dollar-sign")
+})
+
+```
+
+### Cal per person per day
+```{r}
+
+# Value box of KCal per person ----------
+KCalperperson <- reactive({
+  
+  if(input$tabselected == 2){
+    
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "KCal",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+  }
+  
+  else if(input$tabselected == 1) {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "KCal",
+                           year = input$yearSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(KCalperperson()), "Cal"))),
+                          caption = h5("Cal per person per day"),
+                          color = ifelse(round(KCalperperson(), digits=1) > 2306.4 , "success", "danger"),
+                          icon = "fa-utensils")
+})
+
+```
+
+### Protein per person per day
+```{r}
+
+# Value box of Protein per person ----------
+Proteinperperson <- reactive({
+  
+  if(input$tabselected == 2){
+    
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GProtien",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+  }
+  
+  else if(input$tabselected == 1) {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GProtien",
+                           year = input$yearSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(Proteinperperson()), "grams"))),
+                          caption = h5("Protein per person per day"),
+                          color = ifelse(round(Proteinperperson(), digits=1) > 52.1 , "success", "danger"),
+                          icon = "fa-utensils")
+})
+
+```
+
+### Fat per person per day
+```{r}
+
+# Value box of Fat per person ----------
+Fatperperson <- reactive({
+  
+  if(input$tabselected == 2){
+    
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GFat",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
+  }
+  
+  else if(input$tabselected == 1) {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GFat",
+                           year = input$yearSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(Fatperperson()), "grams"))),
+                          caption = h5("Fat per person per day"),
+                          color = ifelse(round(Fatperperson(), digits=1) > 73.7 , "success", "danger"),
+                          icon = "fa-utensils")
+})
+
+```
+
+Cards 2
+----------------------------
+
+### Total Cost
+```{r}
+
+# Value box of Total production cost ----------
+totalCost <- reactive({
+  
+  if(input$tabselected == 1){
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == input$plantingDate,
+                    plantig_density == input$plantingDensity,
+                    nitrogen_fertilizer == input$nAmount)
+    
+  cost = productionCost$total_cost
+  
+  }
+  else if(input$tabselected == 2){
+    
+    precipitationDB <- precipitation %>%
+    filter(district == input$districtSelection,
+           Precipitation == input$precipitationAmount)
+    
+    pd <- precipitationDB$planting_date_id
+    
+    productionCost <- productionCost %>%
+      dplyr::filter(planting_date == pd,
+                    plantig_density == input$plantingDensityWB,
+                    nitrogen_fertilizer == input$nAmountWB)
+    
+    cost = productionCost$total_cost
+    
+  }
+  
+  cost
+  
+})
+
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(totalCost()), "USD"))),
+                          caption = h5("Total production cost per hectare"),
+                          color = "#70aec3",
+                          icon = "fa-dollar-sign")
+})
+```
+
+### Net Cash Income
+```{r, echo=FALSE}
+
+# Value box of Net Cash Income ----------
+netCashIncome <- reactive({
+  
+  if(input$tabselected == 2){
+    
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "NCFI",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
+  }
+  
+  else if(input$tabselected == 1) {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "NCFI",
+                           year = input$yearSelection)
+    
+  }
+  
+  value <- cost/(100*607.77)
+  return(value)
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2(paste(round(netCashIncome()), "USD")),
+                          caption = paste("<h5>Net cash income <small style = 'color:white'>(x100)</small></h5>",
+                                          sep = ""),
+                          color = "#70aec3",
+                          icon = "fa-dollar-sign")
+})
+
+```
+
+### Calcium per person per day
+```{r}
+
+# Value box of Calcium per person ----------
+Calciumperperson <- reactive({
+  
+  if(input$tabselected == 2){
+    
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GCal",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
+  }
+  
+  else if(input$tabselected == 1) {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GCal",
+                           year = input$yearSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(Calciumperperson()), "mg"))),
+                          caption = h5("Calcium per person per day"),
+                          color = ifelse(round(Calciumperperson(), digits=1) > 1446.7 , "success", "danger"),
+                          icon = "fa-utensils")
+})
+
+```
+
+### Iron per person per day
+```{r}
+
+# Value box of Iron per person ----------
+Ironperperson <- reactive({
+  
+  if(input$tabselected == 2){
+    
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GIron",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
+  }
+  
+  else if(input$tabselected == 1) {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GIron",
+                           year = input$yearSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(Ironperperson()), "mg"))),
+                          caption = h5("Iron per person per day"),
+                          color = ifelse(round(Ironperperson(), digits=2) > 13.7 , "success", "danger"),
+                          icon = "fa-utensils")
+})
+
+```
+
+### Vit A per person per day
+```{r}
+# Value box of Vitamin A per person ----------
+VitAperperson <- reactive({
+  
+  if(input$tabselected == 2){
+    
+    cost <- card_filtering_weather(dataBase = dataFCards,
+                                   district = input$districtSelection,
+                                   pp = input$plantingDensityWB,
+                                   n = input$nAmountWB,
+                                   acronym = "GVitA",
+                                   precipitationDB = precipitation,
+                                   precipitationValue = input$precipitationAmount)
+    
+  }
+  
+  else if(input$tabselected == 1) {
+    
+    cost <- card_filtering(dataBase = dataFCards,
+                           district = input$districtSelection,
+                           pd = input$plantingDate,
+                           pp = input$plantingDensity,
+                           n = input$nAmount,
+                           acronym = "GVitA",
+                           year = input$yearSelection)
+    
+  }
+  
+  cost
+  
+})
+
+flexdashboard::renderValueBox({
+
+  flexdashboard::valueBox(value = h2((paste(round(VitAperperson(), digits=3), "mg"))),
+                          caption = h5("Vitamin A per person per day"),
+                          color = ifelse(round(VitAperperson(), digits=3) > 0.868 , "success", "danger"),
+                          icon = "fa-utensils"
+                          )
+})
+```
+
+About
+============================
+
+```{r}
+htmltools::includeHTML(path = "about.html")
+```
+
+

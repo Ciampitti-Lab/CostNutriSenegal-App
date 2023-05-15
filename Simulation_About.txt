@@ -1,0 +1,7 @@
+The data used in the app were generated from simulations using the Agricultural Production Systems Simulator (APSIM) software platform. However, to produce it, were followed four steps:
+1. Literature review about Senegal pearl-millet production and its geospatial distribution;
+2. A APSIM-Millet model was calibrated and evalueted using in-field data (12 districts and 351 locations);A APSIM-Millet model was calibrated and evalueted using in-field data (12 districts and 351 locations);
+3. For each one of the 351 locations, 54 scenarios were simulated, from 1990 to 2021, varying levels of nitrogen, plant density and planting dates;
+4. Recommendations based on the simulations outputs aiming he highest productivity with the lowest input of resources.
+
+To know more about the data obtaining, processement and results, read the paper bellow: https://www.sciencedirect.com/science/article/pii/S0378377423000380 
