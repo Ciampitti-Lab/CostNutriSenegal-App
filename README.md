@@ -15,6 +15,12 @@
 
 ---
 
+## Contributors
+
+- Gustavo Nocera Santiago ([@GustavoSantiago113](https://github.com/GustavoSantiago113))
+
+---
+
 ## Objective
 The objective of this dashboard was to generate an interactive platform to display the results obtained from simulations of costs and nutritional information of pearl-millet cultivation in Senegal.
 
